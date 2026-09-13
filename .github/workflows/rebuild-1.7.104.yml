@@ -1,0 +1,152 @@
+# Community Rebuild Factory - wave 1 builds for Skyrim AE 1.7.104.0 / SKSE 2.3.1 / Address Library format 5.
+# Runs on GitHub's Windows runners (VS 2022 + CMake preinstalled); nothing is installed on Jo's PC.
+# Start it from the Actions tab ("Run workflow"). Outputs land in releases/1.7.104/<mod>/ as a commit on main
+# (and as downloadable workflow artifacts). Recipes: scripts/*.md. Build scripts: ci/*.ps1.
+name: Rebuild SKSE plugins for AE 1.7.104
+
+on:
+  workflow_dispatch:
+    inputs:
+      mods:
+        description: "Which mods to build (comma-separated): oif, description-framework, grab-and-throw"
+        type: string
+        default: "oif,description-framework,grab-and-throw"
+      commonlib_ref:
+        description: "alandtse/CommonLibVR commit on branch ng (must contain Format::SSEv5)"
+        type: string
+        default: "d13d10a0ccb4945870eb841bf1ad8a6cf5ed84dd"
+      vcpkg_ref:
+        description: "microsoft/vcpkg commit to build dependencies from (master = tip)"
+        type: string
+        default: "master"
+      commit_results:
+        description: "Commit releases/1.7.104/<mod>/ back to this branch"
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: rebuild-1.7.104
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      mods: ${{ steps.pick.outputs.mods }}
+    steps:
+      - id: pick
+        shell: bash
+        run: |
+          want="${{ inputs.mods }}"
+          list="[]"
+          for m in oif description-framework grab-and-throw; do
+            if [[ ",${want// /}," == *",$m,"* ]]; then
+              list=$(echo "$list" | jq -c --arg m "$m" '. + [$m]')
+            fi
+          done
+          echo "mods=$list" >> "$GITHUB_OUTPUT"
+          echo "building: $list"
+
+  build:
+    needs: plan
+    if: ${{ needs.plan.outputs.mods != '[]' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        mod: ${{ fromJSON(needs.plan.outputs.mods) }}
+    runs-on: windows-latest
+    env:
+      VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}\vcpkg-bincache
+      VCPKG_FEATURE_FLAGS: manifests,versions,binarycaching
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Restore vcpkg binary cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}\vcpkg-bincache
+          key: vcpkg-bincache-${{ matrix.mod }}-${{ inputs.commonlib_ref }}-${{ inputs.vcpkg_ref }}-${{ hashFiles('ci/*.ps1') }}
+          restore-keys: |
+            vcpkg-bincache-${{ matrix.mod }}-${{ inputs.commonlib_ref }}-${{ inputs.vcpkg_ref }}-
+            vcpkg-bincache-${{ matrix.mod }}-
+
+      - name: Toolchain versions
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path "$env:VCPKG_DEFAULT_BINARY_CACHE" | Out-Null
+          cmake --version
+          git --version
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          if (Test-Path $vswhere) { & $vswhere -latest -property installationVersion; & $vswhere -latest -property installationPath }
+          $cl = Get-ChildItem "${env:ProgramFiles}\Microsoft Visual Studio\2022\*\VC\Tools\MSVC\*\bin\Hostx64\x64\cl.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
+          if ($cl) { Write-Host "cl.exe: $($cl.FullName)" }
+
+      - name: Build ${{ matrix.mod }}
+        shell: pwsh
+        run: |
+          .\ci\build-${{ matrix.mod }}.ps1 -CommonLibRef "${{ inputs.commonlib_ref }}" -VcpkgRef "${{ inputs.vcpkg_ref }}" -OutDir "$env:GITHUB_WORKSPACE\releases\1.7.104\${{ matrix.mod }}"
+
+      - name: Upload ${{ matrix.mod }} outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rebuild-1.7.104-${{ matrix.mod }}
+          path: releases/1.7.104/${{ matrix.mod }}/
+          if-no-files-found: ignore
+          retention-days: 30
+
+  commit:
+    needs: build
+    if: ${{ always() && inputs.commit_results && needs.build.result != 'skipped' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Download build outputs
+        uses: actions/download-artifact@v4
+        with:
+          pattern: rebuild-1.7.104-*
+          path: _artifacts
+
+      - name: Place outputs under releases/1.7.104/
+        shell: bash
+        run: |
+          set -e
+          shopt -s nullglob
+          for d in _artifacts/rebuild-1.7.104-*; do
+            mod="${d##*/rebuild-1.7.104-}"
+            if [ -f "$d/BUILD-NOTES.md" ]; then
+              rm -rf "releases/1.7.104/$mod"
+              mkdir -p "releases/1.7.104/$mod"
+              # keep the git history small: no PDBs in the repo (they stay in the workflow artifact)
+              rsync -a --exclude '*.pdb' "$d/" "releases/1.7.104/$mod/"
+              echo "placed $mod"
+            else
+              echo "no complete output for $mod (build failed?) - not committing it"
+            fi
+          done
+          rm -rf _artifacts
+          git status --short
+
+      - name: Commit and push
+        shell: bash
+        run: |
+          set -e
+          git config user.name "rebuild-factory[bot]"
+          git config user.email "vortexenterprisesllc2024+factory@users.noreply.github.com"
+          git add -A releases/1.7.104
+          if git diff --cached --quiet; then
+            echo "nothing new to commit"
+            exit 0
+          fi
+          git commit -m "releases/1.7.104: wave-1 rebuild outputs (workflow run ${{ github.run_id }}, CommonLib ${{ inputs.commonlib_ref }})"
+          for i in 1 2 3; do
+            if git push origin HEAD:${{ github.ref_name }}; then exit 0; fi
+            git pull --rebase origin ${{ github.ref_name }}
+          done
+          git push origin HEAD:${{ github.ref_name }}
