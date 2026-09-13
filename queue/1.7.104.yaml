@@ -1,0 +1,60 @@
+runtime: "1.7.104.0"
+skse: "2.3.1"
+address_library: "versionlib-1-7-104-0.bin (format 5)"
+updated: "2026-09-13"
+
+items:
+  - id: oif
+    name: Object Impact Framework
+    nexus: 149484
+    upstream: https://github.com/arachnocid/ObjectImpactFramework
+    license: Apache-2.0
+    last_good: "1.6.8 (2025-08-28)"
+    failure: "Unsupported address library format: 5 / hard popup"
+    status: queued_rebuild
+    smoke: "Activate/grab/throw with existing ObjectImpactFramework JSON packs; CIF must stay separate"
+    notes: "Bump commonlibsse-ng port REF to alandtse/CommonLibVR ng with SSEv5"
+
+  - id: description-framework
+    name: Description Framework
+    nexus: 105799
+    upstream: https://github.com/Nightfallstorm/DescriptionFramework
+    license: GPL-3.0
+    last_good: "2.1.2 (2025-08-30)"
+    failure: "format 5 / failed to open address library"
+    status: queued_rebuild
+    smoke: "Inventory/enchant descriptions from *_DESC packs"
+    notes: "Update extern CommonLib submodule; GPL redistribution requires source"
+
+  - id: grab-and-throw
+    name: Grab And Throw
+    nexus: 120460
+    upstream: https://github.com/powerof3/GrabAndThrow
+    license: MIT
+    last_good: "2.1.2 (2026-01-16) — pre-1.7.99"
+    failure: "hard popup po3_GrabAndThrow.dll on Jo boot"
+    status: queued_rebuild
+    smoke: "Hold E grab + R throw; check ini"
+
+  - id: btps-fleikon
+    name: Better Third Person Selection (Fleikon 1.7.99 patch)
+    nexus: null
+    upstream: https://github.com/Juan-MZ/BTPS-parche-1.7.99
+    license: "per Fleikon/Juan-MZ + original BTPS"
+    last_good: "community DLL ~3596800 bytes on Jo install"
+    failure: "stock 0.8.9 incompatible; patch applied"
+    status: catalog_existing
+    smoke: "Third-person select; horse mount/dismount risk note"
+    notes: "Already in Jo’s load; include in pack with credit"
+
+  - id: enchanting-cost-formula-fix
+    name: Enchanting Cost Formula Fix
+    nexus: 62144
+    upstream: null
+    license: unknown
+    last_good: "2.0.0 (2025-08)"
+    failure: "format 5"
+    status: skip_no_source
+    notes: "OK to skip; Scrambled Bugs / ESP settings as fallback"
+
+commonlib_target: "alandtse/CommonLibVR ng with Format::SSEv5 (CommonLibSSE-NG >= ~6.6-6.7)"
