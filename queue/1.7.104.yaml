@@ -11,7 +11,7 @@ items:
     license: Apache-2.0
     last_good: "1.6.8 (2025-08-28)"
     failure: "Unsupported address library format: 5 / hard popup"
-    status: queued_rebuild
+    status: rebuilding
     smoke: "Activate/grab/throw with existing ObjectImpactFramework JSON packs; CIF must stay separate"
     notes: "Bump commonlibsse-ng port REF to alandtse/CommonLibVR ng with SSEv5"
 
@@ -22,7 +22,7 @@ items:
     license: GPL-3.0
     last_good: "2.1.2 (2025-08-30)"
     failure: "format 5 / failed to open address library"
-    status: queued_rebuild
+    status: rebuilding
     smoke: "Inventory/enchant descriptions from *_DESC packs"
     notes: "Update extern CommonLib submodule; GPL redistribution requires source"
 
@@ -33,7 +33,7 @@ items:
     license: MIT
     last_good: "2.1.2 (2026-01-16) — pre-1.7.99"
     failure: "hard popup po3_GrabAndThrow.dll on Jo boot"
-    status: queued_rebuild
+    status: rebuilding
     smoke: "Hold E grab + R throw; check ini"
 
   - id: btps-fleikon
