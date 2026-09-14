@@ -43,6 +43,12 @@ $patches = @()
 Edit-File 'src\Hooks.cpp' 'RE::PlayerCharacter::GetSingleton()->grabType' 'RE::PlayerCharacter::GetSingleton()->GetPlayerRuntimeData().grabType'
 Edit-File 'src\Hooks.cpp' 'player->grabType' 'player->GetPlayerRuntimeData().grabType'
 $patches += 'src/Hooks.cpp: PlayerCharacter::grabType is a direct member in powerof3/CommonLibSSE but lives in the versioned runtime-data block in CommonLibSSE-NG; read it through GetPlayerRuntimeData() (two call sites, same field, same GrabbingType compare).'
+Edit-File 'src\GrabThrowHandler.cpp' 'RE::PlayerCharacter::GetSingleton()->currentProcess' 'RE::PlayerCharacter::GetSingleton()->GetActorRuntimeData().currentProcess'
+Edit-File 'src\GrabThrowHandler.cpp' 'player->currentProcess->SetActorsDetectionEvent(' 'player->GetActorRuntimeData().currentProcess->SetActorsDetectionEvent('
+Edit-File 'src\GrabThrowHandler.cpp' 'a_player->grabSpring' 'a_player->GetPlayerRuntimeData().grabSpring'
+$patches += 'src/GrabThrowHandler.cpp: Actor::currentProcess and PlayerCharacter::grabSpring likewise live in NG runtime-data blocks; read through GetActorRuntimeData() / GetPlayerRuntimeData() (three call sites, same fields).'
+Edit-File 'src\PCH.h' '#include "SKSE/SKSE.h"' "#include `"SKSE/SKSE.h`"`n#ifndef SKSEAPI`n#`tdefine SKSEAPI __cdecl`n#endif"
+$patches += 'src/PCH.h: NG 8.x no longer defines the SKSEAPI calling-convention macro; defined as __cdecl (a no-op on x64) so the SKSEPlugin_Load/Query signatures compile unchanged.'
 $patches += "vcpkg.json: builtin-baseline 14bb451131ccf6be50a63a8d9dfe7980e46b5958 -> $vcpkgHead; added directxtk and rapidcsv, which CommonLibSSE-NG's CMakeLists requires (powerof3's fork did not). Existing deps (clib-util, rsm-binary-io, spdlog, xbyak) untouched."
 $patches += "CommonLib: extern/CommonLibSSE submodule (powerof3/CommonLibSSE 7312db81, no format 5) left uninitialised; CommonLibSSEPath=$clibDir -> alandtse/CommonLibVR $($clib.Sha) (NG $($clib.Version), Format::SSEv5). Upstream CMakeLists already resolves CommonLib from that env var when extern/ is empty."
 Invoke-Checked git --no-pager diff --stat
