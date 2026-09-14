@@ -43,6 +43,10 @@ Edit-File 'src\PCH.h' '#include "SKSE/SKSE.h"' "#include `"SKSE/SKSE.h`"`n#ifnde
 $patches += 'src/PCH.h: NG 8.x no longer defines the SKSEAPI calling-convention macro; defined as __cdecl (a no-op on x64) so the SKSEPlugin_Query signature compiles unchanged.'
 Edit-File 'src\PCH.h' '#define WIN32_LEAN_AND_MEAN' "#define NOMINMAX`n#define WIN32_LEAN_AND_MEAN"
 $patches += 'src/PCH.h: NOMINMAX before the Windows headers - with NG 8.x the min/max macros leak into SimpleIni.h (std::numeric_limits<>::max()) and break the build.'
+# fmt >= 10 (pulled in by spdlog 1.16 / NG 8.x) no longer formats enums implicitly; DF logs two enum types.
+Edit-File 'src\PCH.h' "#`tdefine SKSEAPI __cdecl`n#endif" "#`tdefine SKSEAPI __cdecl`n#endif`n`nnamespace RE`n{`n`t// fmt >= 10 no longer formats enums implicitly (fmt::format_as hook, found by ADL)`n`tconstexpr auto format_as(GFxValue::ValueType a_type) noexcept { return static_cast<std::underlying_type_t<GFxValue::ValueType>>(a_type); }`n}"
+Edit-File 'src\Settings.h' "`trobin_hood::unordered_flat_map<std::string, bool> settingsMap{};`n};" "`trobin_hood::unordered_flat_map<std::string, bool> settingsMap{};`n};`n`n// fmt >= 10 no longer formats enums implicitly (fmt::format_as hook, found by ADL)`ninline constexpr auto format_as(Settings::SkyrimFont a_font) noexcept { return static_cast<int>(a_font); }"
+$patches += 'src/PCH.h + src/Settings.h: fmt 12 (via spdlog 1.16 / NG 8.x) refuses to format enums without a format_as() hook; added format_as() for RE::GFxValue::ValueType and Settings::SkyrimFont so the existing logger lines print the same integer values as before.'
 $patches += "vcpkg.json: builtin-baseline moved from 417119555f155f6044dec7a379cd25466e339873 (2023) to $vcpkgHead and the fmt 8.0.1 override removed, because NG 8.0.1 requires fmt >= 12.1.0 / spdlog >= 1.16.0. No dependency added or removed."
 $patches += "extern/CommonLibSSE-NG: submodule 738afc457fdeba050ce328f15225aa3cde674187 (NG 3.6.0, formats 1/2 only) -> $($clib.Sha) (NG $($clib.Version), Format::SSEv5)."
 Invoke-Checked git --no-pager diff --stat
