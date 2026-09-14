@@ -42,7 +42,13 @@ Invoke-Checked git --no-pager diff --stat
 
 # ---- 5. configure + build (upstream preset "descriptionframework") -------------
 Remove-Item -Recurse -Force build -ErrorAction SilentlyContinue
-Invoke-Checked cmake --preset descriptionframework -DBUILD_TESTS=OFF -DSKSE_SUPPORT_XBYAK=ON
+$triplets = New-ReleaseOnlyTriplet -Name 'x64-windows-static'
+try {
+    Invoke-Checked cmake --preset descriptionframework -DBUILD_TESTS=OFF -DSKSE_SUPPORT_XBYAK=ON "-DVCPKG_OVERLAY_TRIPLETS=$triplets"
+} catch {
+    Show-VcpkgFailureLogs
+    throw
+}
 Invoke-Checked cmake --build build --config Release
 $dll = Get-ChildItem -Recurse -Filter DescriptionFramework.dll build | Select-Object -First 1
 if (-not $dll) { throw 'DescriptionFramework.dll not produced' }
