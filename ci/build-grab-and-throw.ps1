@@ -49,7 +49,13 @@ Invoke-Checked git --no-pager diff --stat
 
 # ---- 5. configure + build (upstream preset "vs2022-windows-vcpkg-ae") -----------
 Remove-Item -Recurse -Force buildae -ErrorAction SilentlyContinue
-Invoke-Checked cmake --preset vs2022-windows-vcpkg-ae -DCOPY_BUILD=OFF -DBUILD_TESTS=OFF -DSKSE_SUPPORT_XBYAK=ON
+$triplets = New-ReleaseOnlyTriplet -Name 'x64-windows-static'
+try {
+    Invoke-Checked cmake --preset vs2022-windows-vcpkg-ae -DCOPY_BUILD=OFF -DBUILD_TESTS=OFF -DSKSE_SUPPORT_XBYAK=ON "-DVCPKG_OVERLAY_TRIPLETS=$triplets"
+} catch {
+    Show-VcpkgFailureLogs
+    throw
+}
 Invoke-Checked cmake --build buildae --config Release
 $dll = Get-ChildItem -Recurse -Filter po3_GrabAndThrow.dll buildae | Select-Object -First 1
 if (-not $dll) { throw 'po3_GrabAndThrow.dll not produced' }
