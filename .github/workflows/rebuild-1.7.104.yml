@@ -139,9 +139,9 @@ jobs:
           set -e
           git config user.name "rebuild-factory[bot]"
           git config user.email "vortexenterprisesllc2024+factory@users.noreply.github.com"
-          git add -A releases/1.7.104
+          git add -A
           if git diff --cached --quiet; then
-            echo "nothing new to commit"
+            echo "nothing new to commit (no build produced a complete output folder)"
             exit 0
           fi
           git commit -m "releases/1.7.104: wave-1 rebuild outputs (workflow run ${{ github.run_id }}, CommonLib ${{ inputs.commonlib_ref }})"
