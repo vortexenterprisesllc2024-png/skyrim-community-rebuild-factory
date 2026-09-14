@@ -30,6 +30,12 @@ Edit-File $port 'SHA512 997238522e1433dd81c73b4762ae8ec0e919ac65604570924ae5a76b
 # old vcpkg_configure_cmake / vcpkg_install_cmake are the deprecated names; use the current ones.
 Edit-File $port "vcpkg_configure_cmake(`n    SOURCE_PATH `"`${SOURCE_PATH}`"`n    PREFER_NINJA`n    OPTIONS -DBUILD_TESTS=off -DSKSE_SUPPORT_XBYAK=on`n)" "vcpkg_cmake_configure(`n    SOURCE_PATH `"`${SOURCE_PATH}`"`n    OPTIONS -DBUILD_TESTS=off -DSKSE_SUPPORT_XBYAK=on`n)"
 Edit-File $port 'vcpkg_install_cmake()' 'vcpkg_cmake_install()'
+# NG 8.x vendors MinHook's hde64 through FetchContent (SKSE_SUPPORT_PATCH_SAFETY). vcpkg configures ports with
+# FETCHCONTENT_FULLY_DISCONNECTED=ON, so fetch MinHook the vcpkg way and hand it to FetchContent by path.
+$minhookSha512 = Get-GitHubArchiveSha512 -Repo 'TsudaKageyu/minhook' -Sha 'v1.3.4'
+Edit-File $port "file(COPY `${OPENVR_FILES} DESTINATION `"`${SOURCE_PATH}/extern/openvr`")" "file(COPY `${OPENVR_FILES} DESTINATION `"`${SOURCE_PATH}/extern/openvr`")`n`nvcpkg_from_github(`n    OUT_SOURCE_PATH MINHOOK_SOURCE_PATH`n    REPO TsudaKageyu/minhook`n    REF v1.3.4`n    SHA512 $minhookSha512`n    HEAD_REF master`n)"
+Edit-File $port 'OPTIONS -DBUILD_TESTS=off -DSKSE_SUPPORT_XBYAK=on' "OPTIONS -DBUILD_TESTS=off -DSKSE_SUPPORT_XBYAK=on `"-DFETCHCONTENT_SOURCE_DIR_HDE64=`${MINHOOK_SOURCE_PATH}`""
+Get-Content $port
 $portJson = 'cmake\ports\commonlibsse-ng\vcpkg.json'
 Edit-File $portJson '"version-semver": "3.7.0"' '"version-semver": "8.0.1"'
 Edit-File $portJson "`"dependencies`": [`n    {`n      `"name`": `"vcpkg-cmake-config`",`n      `"host`": true`n    }," "`"dependencies`": [`n    {`n      `"name`": `"vcpkg-cmake`",`n      `"host`": true`n    },`n    {`n      `"name`": `"vcpkg-cmake-config`",`n      `"host`": true`n    },"
@@ -48,7 +54,13 @@ Invoke-Checked git --no-pager diff --stat
 
 # ---- 4. configure + build (upstream preset "AE") ------------------------------
 Remove-Item -Recurse -Force build -ErrorAction SilentlyContinue
-Invoke-Checked cmake --preset AE
+$triplets = New-ReleaseOnlyTriplet -Name 'x64-windows-static-md'
+try {
+    Invoke-Checked cmake --preset AE "-DVCPKG_OVERLAY_TRIPLETS=$triplets"
+} catch {
+    Show-VcpkgFailureLogs -Port 'commonlibsse-ng'
+    throw
+}
 Invoke-Checked cmake --build --preset AE
 $dll = Get-ChildItem -Recurse -Filter ObjectImpactFramework.dll build | Select-Object -First 1
 if (-not $dll) { throw 'ObjectImpactFramework.dll not produced' }
