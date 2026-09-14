@@ -8,7 +8,8 @@ function Invoke-Checked {
     # Run a native command and fail the script if it returns non-zero.
     param([Parameter(Mandatory)][string]$Exe, [Parameter(ValueFromRemainingArguments)][string[]]$ArgList)
     Write-Host ">> $Exe $($ArgList -join ' ')"
-    & $Exe @ArgList
+    # Out-Host: show the tool's output in the log without it leaking into the caller's return value
+    & $Exe @ArgList | Out-Host
     if ($LASTEXITCODE -ne 0) { throw "$Exe exited with code $LASTEXITCODE" }
 }
 
@@ -38,6 +39,33 @@ function Initialize-Vcpkg {
     "VCPKG_ROOT=$Root" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
     "VCPKG_INSTALLATION_ROOT=$Root" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
     return $head
+}
+
+function New-ReleaseOnlyTriplet {
+    # Copy of a stock vcpkg triplet with VCPKG_BUILD_TYPE=release, so dependencies are not also built
+    # in Debug (halves CommonLib/directxtk build time). Returns the overlay-triplets directory.
+    param([Parameter(Mandatory)][string]$Name)
+    $dir = Join-Path $env:RUNNER_TEMP 'triplets'
+    New-Item -ItemType Directory -Force -Path $dir | Out-Null
+    $stock = Get-ChildItem -Path "$env:VCPKG_ROOT\triplets" -Recurse -Filter "$Name.cmake" | Select-Object -First 1
+    if (-not $stock) { throw "stock triplet $Name not found under $env:VCPKG_ROOT\triplets" }
+    $body = (Get-Content $stock.FullName -Raw).TrimEnd() + "`n`n# release-only build (rebuild factory)`nset(VCPKG_BUILD_TYPE release)`n"
+    [IO.File]::WriteAllText((Join-Path $dir "$Name.cmake"), $body, (New-Object System.Text.UTF8Encoding($false)))
+    Write-Host "overlay triplet $Name (release only) at $dir"
+    return $dir
+}
+
+function Show-VcpkgFailureLogs {
+    # vcpkg only prints the paths of a failed port's logs; print their tails so the Actions log is enough.
+    param([string]$Port = '*')
+    $root = Join-Path $env:VCPKG_ROOT 'buildtrees'
+    if (-not (Test-Path $root)) { return }
+    Get-ChildItem -Path $root -Directory -Filter $Port | ForEach-Object {
+        Get-ChildItem -Path $_.FullName -Filter '*.log' -File | Where-Object { $_.Name -notmatch 'CMakeCache' } | ForEach-Object {
+            Write-Host "===== $($_.FullName) (last 80 lines) ====="
+            Get-Content $_.FullName -Tail 80 | Out-Host
+        }
+    }
 }
 
 function Get-CommonLib {
