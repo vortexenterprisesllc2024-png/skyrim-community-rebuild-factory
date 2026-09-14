@@ -73,6 +73,8 @@ function Get-GitHubArchiveSha512 {
 function Edit-File {
     # Literal (not regex) replace that fails loudly if the needle is missing.
     param([Parameter(Mandatory)][string]$Path, [Parameter(Mandatory)][string]$Find, [Parameter(Mandatory)][string]$Replace, [int]$Expect = 1)
+    # .NET does not follow Push-Location; give it the full PowerShell-resolved path
+    $Path = (Resolve-Path -LiteralPath $Path).ProviderPath
     $text = [IO.File]::ReadAllText($Path)
     if ($text.Contains("`r`n")) {
         # checkout may be CRLF (core.autocrlf); needles are written with plain `n
