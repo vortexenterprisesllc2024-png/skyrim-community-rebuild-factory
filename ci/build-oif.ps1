@@ -35,6 +35,8 @@ Edit-File $port 'vcpkg_install_cmake()' 'vcpkg_cmake_install()'
 $minhookSha512 = Get-GitHubArchiveSha512 -Repo 'TsudaKageyu/minhook' -Sha 'v1.3.4'
 Edit-File $port "file(COPY `${OPENVR_FILES} DESTINATION `"`${SOURCE_PATH}/extern/openvr`")" "file(COPY `${OPENVR_FILES} DESTINATION `"`${SOURCE_PATH}/extern/openvr`")`n`nvcpkg_from_github(`n    OUT_SOURCE_PATH MINHOOK_SOURCE_PATH`n    REPO TsudaKageyu/minhook`n    REF v1.3.4`n    SHA512 $minhookSha512`n    HEAD_REF master`n)"
 Edit-File $port 'OPTIONS -DBUILD_TESTS=off -DSKSE_SUPPORT_XBYAK=on' "OPTIONS -DBUILD_TESTS=off -DSKSE_SUPPORT_XBYAK=on `"-DFETCHCONTENT_SOURCE_DIR_HDE64=`${MINHOOK_SOURCE_PATH}`""
+# NG 8.x ships COPYING.txt (GPL-3.0-or-later + exceptions), not LICENSE
+Edit-File $port 'INSTALL "${SOURCE_PATH}/LICENSE"' 'INSTALL "${SOURCE_PATH}/COPYING.txt"'
 Get-Content $port
 $portJson = 'cmake\ports\commonlibsse-ng\vcpkg.json'
 Edit-File $portJson '"version-semver": "3.7.0"' '"version-semver": "8.0.1"'
@@ -48,6 +50,12 @@ Edit-File 'include\PCH.h' 'v.HasNoStructUse();' 'v.UsesNoStructs();'
 $patches += 'include/PCH.h: SKSE::PluginVersionData::HasNoStructUse() was renamed UsesNoStructs() in CommonLibSSE-NG (same flag, kVersionIndependentEx_NoStructUse).'
 Edit-File 'include\PCH.h' 'SKSE::Init(a_skse);' 'SKSE::Init(a_skse, { .log = false });'
 $patches += 'include/PCH.h: SKSE::Init(a_skse) now installs its own spdlog logger by default; pass { .log = false } so the plugin keeps its own ObjectImpactFramework.log setup (same file name, original pattern).'
+Edit-File 'include\PCH.h' 'v.UsesAddressLibrary(true);' 'v.UsesAddressLibrary();'
+$patches += 'include/PCH.h: PluginVersionData::UsesAddressLibrary() takes no argument in NG 8.x (same flag set).'
+Edit-File 'include\PCH.h' "#`tinclude `"SKSE/SKSE.h`"" "#`tinclude `"SKSE/SKSE.h`"`n#ifndef SKSEAPI`n#`tdefine SKSEAPI __cdecl`n#endif"
+$patches += 'include/PCH.h: NG 8.x no longer defines the SKSEAPI calling-convention macro; defined as __cdecl (a no-op on x64) so the SKSEPlugin_Load/Query signatures compile unchanged.'
+Edit-File 'include\PCH.h' "#`tdefine SKSE_SUPPORT_XBYAK" "#define NOMINMAX`n#`tdefine SKSE_SUPPORT_XBYAK"
+$patches += 'include/PCH.h: NOMINMAX before the Windows headers so std::numeric_limits<>::max() in NG 8.x / dependency headers is not eaten by the min/max macros (OIF code already parenthesises its own uses).'
 Edit-File 'src\Effects.cpp' 'RE::DebugNotification(' 'RE::SendHUDMessage::ShowHUDMessage('
 $patches += 'src/Effects.cpp: RE::DebugNotification() no longer exists in NG 8.x; RE::SendHUDMessage::ShowHUDMessage() is the same engine call (same three arguments).'
 Invoke-Checked git --no-pager diff --stat
