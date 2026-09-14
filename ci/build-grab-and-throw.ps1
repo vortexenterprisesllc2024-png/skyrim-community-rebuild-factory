@@ -45,8 +45,8 @@ Edit-File 'src\Hooks.cpp' 'player->grabType' 'player->GetPlayerRuntimeData().gra
 $patches += 'src/Hooks.cpp: PlayerCharacter::grabType is a direct member in powerof3/CommonLibSSE but lives in the versioned runtime-data block in CommonLibSSE-NG; read it through GetPlayerRuntimeData() (two call sites, same field, same GrabbingType compare).'
 Edit-File 'src\GrabThrowHandler.cpp' 'RE::PlayerCharacter::GetSingleton()->currentProcess' 'RE::PlayerCharacter::GetSingleton()->GetActorRuntimeData().currentProcess'
 Edit-File 'src\GrabThrowHandler.cpp' 'player->currentProcess->SetActorsDetectionEvent(' 'player->GetActorRuntimeData().currentProcess->SetActorsDetectionEvent('
-Edit-File 'src\GrabThrowHandler.cpp' 'a_player->grabSpring' 'a_player->GetPlayerRuntimeData().grabSpring'
-$patches += 'src/GrabThrowHandler.cpp: Actor::currentProcess and PlayerCharacter::grabSpring likewise live in NG runtime-data blocks; read through GetActorRuntimeData() / GetPlayerRuntimeData() (three call sites, same fields).'
+Edit-File 'src\GrabThrowHandler.cpp' 'a_player->grabSpring' 'a_player->GetPlayerRuntimeData().grabData.grabSpring'
+$patches += 'src/GrabThrowHandler.cpp: Actor::currentProcess and PlayerCharacter::grabSpring likewise live in NG runtime-data blocks (grabSpring inside GrabData); read through GetActorRuntimeData() / GetPlayerRuntimeData().grabData (three call sites, same fields, same offsets).'
 Edit-File 'src\PCH.h' '#include "SKSE/SKSE.h"' "#include `"SKSE/SKSE.h`"`n#ifndef SKSEAPI`n#`tdefine SKSEAPI __cdecl`n#endif"
 $patches += 'src/PCH.h: NG 8.x no longer defines the SKSEAPI calling-convention macro; defined as __cdecl (a no-op on x64) so the SKSEPlugin_Load/Query signatures compile unchanged.'
 $patches += "vcpkg.json: builtin-baseline 14bb451131ccf6be50a63a8d9dfe7980e46b5958 -> $vcpkgHead; added directxtk and rapidcsv, which CommonLibSSE-NG's CMakeLists requires (powerof3's fork did not). Existing deps (clib-util, rsm-binary-io, spdlog, xbyak) untouched."
