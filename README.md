@@ -57,7 +57,7 @@ See `docs/CONTRIBUTING.md`. Short version: pick a queued mod → bump CommonLib 
 ## License
 
 - Repo docs/scripts: MIT (unless noted)
-- Rebuilt DLLs: **same license as upstream** (GPL stays GPL)
+- Format-5 rebuilds link CommonLibSSE-NG (**GPL-3.0-or-later** + Modding Exception). Redistribution of those DLLs is a GPL-combined work and **must** include corresponding source (`*-rebuild-src.zip` in each release folder). The upstream plugin licence still applies to plugin code.
 - Always keep upstream LICENSE in the release folder
 
 ## Credits

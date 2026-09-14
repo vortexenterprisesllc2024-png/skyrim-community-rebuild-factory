@@ -1,7 +1,7 @@
 runtime: "1.7.104.0"
 skse: "2.3.1"
 address_library: "versionlib-1-7-104-0.bin (format 5)"
-updated: "2026-09-13"
+updated: "2026-09-14"
 
 items:
   - id: oif
@@ -11,9 +11,9 @@ items:
     license: Apache-2.0
     last_good: "1.6.8 (2025-08-28)"
     failure: "Unsupported address library format: 5 / hard popup"
-    status: rebuilding
+    status: built_pending_smoke
     smoke: "Activate/grab/throw with existing ObjectImpactFramework JSON packs; CIF must stay separate"
-    notes: "Bump commonlibsse-ng port REF to alandtse/CommonLibVR ng with SSEv5"
+    notes: "63731bc; CommonLibSSE-NG 8.0.1 / d13d10a0; staged disabled in Vortex; smoke not done (Jo SKSE-boot to main menu with music); hook-drift caveat if boot is clean but an event crashes"
 
   - id: description-framework
     name: Description Framework
@@ -22,9 +22,9 @@ items:
     license: GPL-3.0
     last_good: "2.1.2 (2025-08-30)"
     failure: "format 5 / failed to open address library"
-    status: rebuilding
+    status: built_pending_smoke
     smoke: "Inventory/enchant descriptions from *_DESC packs"
-    notes: "Update extern CommonLib submodule; GPL redistribution requires source"
+    notes: "63731bc; CommonLibSSE-NG 8.0.1 / d13d10a0; staged disabled in Vortex; smoke not done (Jo SKSE-boot to main menu with music); hook-drift caveat; corresponding source in *-rebuild-src.zip"
 
   - id: grab-and-throw
     name: Grab And Throw
@@ -33,8 +33,9 @@ items:
     license: MIT
     last_good: "2.1.2 (2026-01-16) — pre-1.7.99"
     failure: "hard popup po3_GrabAndThrow.dll on Jo boot"
-    status: rebuilding
+    status: built_pending_smoke
     smoke: "Hold E grab + R throw; check ini"
+    notes: "63731bc; CommonLibSSE-NG 8.0.1 / d13d10a0; staged disabled in Vortex; smoke not done (Jo SKSE-boot to main menu with music); hook-drift caveat"
 
   - id: btps-fleikon
     name: Better Third Person Selection (Fleikon 1.7.99 patch)
