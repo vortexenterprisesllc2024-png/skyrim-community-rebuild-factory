@@ -1,5 +1,5 @@
 # Community Rebuild Factory - wave 1 builds for Skyrim AE 1.7.104.0 / SKSE 2.3.1 / Address Library format 5.
-# Runs on GitHub's Windows runners (VS 2022 + CMake preinstalled); nothing is installed on Jo's PC.
+# Runs on GitHub's windows-2022 runners (VS 2022 + CMake preinstalled); nothing is installed on Jo's PC.
 # Start it from the Actions tab ("Run workflow"). Outputs land in releases/1.7.104/<mod>/ as a commit on main
 # (and as downloadable workflow artifacts). Recipes: scripts/*.md. Build scripts: ci/*.ps1.
 name: Rebuild SKSE plugins for AE 1.7.104
@@ -57,7 +57,9 @@ jobs:
       fail-fast: false
       matrix:
         mod: ${{ fromJSON(needs.plan.outputs.mods) }}
-    runs-on: windows-latest
+    # windows-2022 = Visual Studio 2022 (v143), which the three upstream CMake presets ask for.
+    # windows-latest moved to Visual Studio 2026 in June 2026 and has no VS 2022 instance.
+    runs-on: windows-2022
     env:
       VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}\vcpkg-bincache
       VCPKG_FEATURE_FLAGS: manifests,versions,binarycaching
