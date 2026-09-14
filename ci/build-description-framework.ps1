@@ -36,6 +36,13 @@ Get-Content vcpkg.json
 $patches = @()
 Edit-File 'src\main.cpp' 'SKSE::Init(a_skse);' 'SKSE::Init(a_skse, { .log = false });'
 $patches += 'src/main.cpp: SKSE::Init(a_skse) in CommonLibSSE-NG 8.x installs its own spdlog logger by default, which would replace the logger InitializeLog() already set up (and drop the bDebug level); { .log = false } keeps the original DescriptionFramework.log behaviour.'
+Edit-File 'src\main.cpp' 'v.UsesAddressLibrary(true);' 'v.UsesAddressLibrary();'
+Edit-File 'src\main.cpp' 'v.UsesNoStructs(true);' 'v.UsesNoStructs();'
+$patches += 'src/main.cpp: PluginVersionData::UsesAddressLibrary() / UsesNoStructs() take no argument in NG 8.x (same flags set).'
+Edit-File 'src\PCH.h' '#include "SKSE/SKSE.h"' "#include `"SKSE/SKSE.h`"`n#ifndef SKSEAPI`n#`tdefine SKSEAPI __cdecl`n#endif"
+$patches += 'src/PCH.h: NG 8.x no longer defines the SKSEAPI calling-convention macro; defined as __cdecl (a no-op on x64) so the SKSEPlugin_Query signature compiles unchanged.'
+Edit-File 'src\PCH.h' '#define WIN32_LEAN_AND_MEAN' "#define NOMINMAX`n#define WIN32_LEAN_AND_MEAN"
+$patches += 'src/PCH.h: NOMINMAX before the Windows headers - with NG 8.x the min/max macros leak into SimpleIni.h (std::numeric_limits<>::max()) and break the build.'
 $patches += "vcpkg.json: builtin-baseline moved from 417119555f155f6044dec7a379cd25466e339873 (2023) to $vcpkgHead and the fmt 8.0.1 override removed, because NG 8.0.1 requires fmt >= 12.1.0 / spdlog >= 1.16.0. No dependency added or removed."
 $patches += "extern/CommonLibSSE-NG: submodule 738afc457fdeba050ce328f15225aa3cde674187 (NG 3.6.0, formats 1/2 only) -> $($clib.Sha) (NG $($clib.Version), Format::SSEv5)."
 Invoke-Checked git --no-pager diff --stat
