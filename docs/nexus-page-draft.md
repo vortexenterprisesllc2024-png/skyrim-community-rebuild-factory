@@ -29,4 +29,4 @@ After 1.7.x, many SKSE DLLs fail with “Unsupported address library format: 5�
 
 **Source / contribute:** [GitHub repo URL TBD]
 
-**Permissions:** Rebuilds respect upstream licenses. GPL plugins ship with source links. Authors: if you release an official 1.7 build, tell us — we mark ours superseded and point to you.
+**Permissions:** Format-5 rebuilds link CommonLibSSE-NG (GPL-3.0-or-later + Modding Exception), so redistribution must include corresponding source (`*-rebuild-src.zip` in each release folder). The upstream plugin licence still applies to plugin code. Authors: if you release an official 1.7 build, tell us — we mark ours superseded and point to you.
