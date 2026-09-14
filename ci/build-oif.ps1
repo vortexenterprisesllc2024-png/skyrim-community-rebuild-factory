@@ -58,6 +58,16 @@ Edit-File 'include\PCH.h' "#`tdefine SKSE_SUPPORT_XBYAK" "#define NOMINMAX`n#`td
 $patches += 'include/PCH.h: NOMINMAX before the Windows headers so std::numeric_limits<>::max() in NG 8.x / dependency headers is not eaten by the min/max macros (OIF code already parenthesises its own uses).'
 Edit-File 'src\Effects.cpp' 'RE::DebugNotification(' 'RE::SendHUDMessage::ShowHUDMessage('
 $patches += 'src/Effects.cpp: RE::DebugNotification() no longer exists in NG 8.x; RE::SendHUDMessage::ShowHUDMessage() is the same engine call (same three arguments).'
+Edit-File 'src\EventSinks.cpp' 'RE::MagicSystem::Delivery::kTotal' 'RE::MagicSystem::Delivery::kNone' -Expect 3
+$patches += 'src/EventSinks.cpp: MagicSystem::Delivery::kTotal (value 5) is spelled kNone (value 5) in NG 8.x - three switch cases, same value.'
+Edit-File 'src\Effects.cpp' 'RE::COL_LAYER::kClutterLarge,' 'static_cast<RE::COL_LAYER>(29), // NG 3.7 named layer 29 kClutterLarge; NG 8.x names it kWard - value kept'
+Edit-File 'src\Effects.cpp' 'RE::COL_LAYER::kItemPicker,' 'RE::COL_LAYER::kItemPick, // NG 8.x spelling of kItemPicker (40)'
+$patches += 'src/Effects.cpp: two COL_LAYER enumerators renamed in NG 8.x (kClutterLarge=29 -> written as the literal 29; kItemPicker=40 -> kItemPick); the raycast layer list keeps the same numeric layers.'
+Edit-File 'src\Effects.cpp' "uint32_t filterInfo = 0;`n                        sourceActor->GetCollisionFilterInfo(filterInfo);" "RE::CFilter collisionFilter{};`n                        sourceActor->GetCollisionFilterInfo(collisionFilter);`n                        uint32_t filterInfo = collisionFilter.filter;"
+Edit-File 'src\Effects.cpp' 'pick.rayInput.filterInfo = (filterInfo & 0xFFFF0000) | static_cast<uint32_t>(layer);' 'pick.rayInput.filterInfo.filter = (filterInfo & 0xFFFF0000) | static_cast<uint32_t>(layer);'
+$patches += 'src/Effects.cpp: Actor::GetCollisionFilterInfo() and hkpWorldRayCastInput::filterInfo now use the RE::CFilter wrapper (a struct around the same uint32) instead of a raw uint32_t; same engine call (ID 36559/37560), same bits.'
+Edit-File 'src\Effects.cpp' 'audioManager->BuildSoundDataFromDescriptor(' 'audioManager->GetSoundHandle('
+$patches += 'src/Effects.cpp: BSAudioManager::BuildSoundDataFromDescriptor() was renamed GetSoundHandle() in NG 8.x - same engine function (ID 66404/67666), same arguments.'
 Invoke-Checked git --no-pager diff --stat
 
 # ---- 4. configure + build (upstream preset "AE") ------------------------------
