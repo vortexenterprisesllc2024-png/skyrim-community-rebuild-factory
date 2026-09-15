@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       mods:
-        description: "Which mods to build (comma-separated): oif, description-framework, grab-and-throw"
+        description: "Which mods to build (comma-separated): oif, description-framework, grab-and-throw, honed-metal"
         type: string
         default: "oif,description-framework,grab-and-throw"
       commonlib_ref:
@@ -23,6 +23,15 @@ on:
         description: "Commit releases/1.7.104/<mod>/ back to this branch"
         type: boolean
         default: true
+  # Feature-branch pushes that touch Honed Metal (workflow_dispatch is 403 for the cloud-agent token).
+  # Does not run on main. Empty inputs.mods => honed-metal only; commit_results stays on for those pushes.
+  push:
+    branches-ignore:
+      - main
+    paths:
+      - 'sources/honed-metal/**'
+      - 'ci/build-honed-metal.ps1'
+      - '.github/workflows/rebuild-1.7.104.yml'
 
 permissions:
   contents: write
@@ -41,6 +50,9 @@ jobs:
         shell: bash
         run: |
           want="${{ inputs.mods }}"
+          if [ -z "$want" ]; then
+            want="honed-metal"
+          fi
           list="[]"
           for m in oif description-framework grab-and-throw honed-metal; do
             if [[ ",${want// /}," == *",$m,"* ]]; then
@@ -102,7 +114,7 @@ jobs:
 
   commit:
     needs: build
-    if: ${{ always() && inputs.commit_results && needs.build.result != 'skipped' }}
+    if: ${{ always() && needs.build.result != 'skipped' && (inputs.commit_results == true || (github.event_name == 'push' && github.ref_name != 'main')) }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
