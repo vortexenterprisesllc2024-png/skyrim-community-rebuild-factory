@@ -149,7 +149,7 @@ $notes += "| Upstream licence | per the Nexus 61015 page / author (source ships 
 $notes += "| Build model | classic skse64 plugin: ianpatt/skse64 compiled as a static library + skse64_common + ianpatt/common (author's ReadMe.txt), NOT CommonLibSSE |"
 $notes += "| skse64 | https://github.com/ianpatt/skse64 tag ``$SkseRef`` (commit ``$skseSha``): CURRENT_RELEASE_RUNTIME = RUNTIME_VERSION_1_7_104, SKSE 2.3.1 |"
 $notes += "| common | https://github.com/ianpatt/common commit ``$commonSha`` |"
-$notes += "| Configure | ``cmake -S . -B build -G \"Visual Studio 17 2022\" -A x64 -DCMAKE_PREFIX_PATH=<extern> -DSKSE64_ROOT=<skse64>`` (wrapper CMakeLists.txt in the src zip) |"
+$notes += "| Configure | ``cmake -S . -B build -G `"Visual Studio 17 2022`" -A x64 -DCMAKE_PREFIX_PATH=<extern> -DSKSE64_ROOT=<skse64>`` (wrapper CMakeLists.txt in the src zip) |"
 $notes += "| Build | ``cmake --build build --config Release --target HonedMetal`` (v143, /MT, C++14, NDEBUG;_CONSOLE as in HonedMetal.vcxproj Release x64) |"
 $notes += "| DLL | ``HonedMetal.dll`` |"
 $notes += "| DLL size | $len bytes |"
