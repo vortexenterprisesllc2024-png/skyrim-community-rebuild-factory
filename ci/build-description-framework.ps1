@@ -34,8 +34,9 @@ Get-Content vcpkg.json
 
 # ---- 4. source patches --------------------------------------------------------
 $patches = @()
-Edit-File 'src\main.cpp' 'SKSE::Init(a_skse);' 'SKSE::Init(a_skse, { .log = false });'
+Edit-File 'src\main.cpp' 'SKSE::Init(a_skse);' 'SKSE::Init(a_skse, { .log = false, .trampoline = true, .trampolineSize = 64 });'
 $patches += 'src/main.cpp: SKSE::Init(a_skse) in CommonLibSSE-NG 8.x installs its own spdlog logger by default, which would replace the logger InitializeLog() already set up (and drop the bDebug level); { .log = false } keeps the original DescriptionFramework.log behaviour.'
+$patches += 'src/main.cpp: the trampoline is now sized once in SKSE::Init ({ .trampoline = true, .trampolineSize = 64 }). NG 8.x sizes a plugin trampoline exactly once (std::call_once in Impl::API::InitTrampoline, reached from SKSE::Init), so the upstream idiom in src/PCH.h - SKSE::AllocTrampoline(14) before every write_thunk_call - left the trampoline at 14 bytes and made every later call a no-op; the second distinct thunk (ItemCardPopulateHook2) then failed with the fatal "Failed to handle allocation request" popup at boot (run 34795479373 build, 14 Sep 2026 smoke test). Two distinct thunks x 14 bytes = 28 needed; 64 leaves room. src/PCH.h is left unchanged - its AllocTrampoline(14) calls are harmless no-ops after this.'
 Edit-File 'src\main.cpp' 'v.UsesAddressLibrary(true);' 'v.UsesAddressLibrary();'
 Edit-File 'src\main.cpp' 'v.UsesNoStructs(true);' 'v.UsesNoStructs();'
 $patches += 'src/main.cpp: PluginVersionData::UsesAddressLibrary() / UsesNoStructs() take no argument in NG 8.x (same flags set).'
