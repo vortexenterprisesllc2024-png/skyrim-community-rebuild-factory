@@ -42,7 +42,7 @@ jobs:
         run: |
           want="${{ inputs.mods }}"
           list="[]"
-          for m in oif description-framework grab-and-throw; do
+          for m in oif description-framework grab-and-throw honed-metal; do
             if [[ ",${want// /}," == *",$m,"* ]]; then
               list=$(echo "$list" | jq -c --arg m "$m" '. + [$m]')
             fi
