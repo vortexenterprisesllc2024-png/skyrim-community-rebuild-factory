@@ -176,3 +176,6 @@ $notes += "- If the author publishes a 1.7.104 build, it supersedes this one."
 $notes -join "`n" | Out-File -Encoding utf8 (Join-Path $OutDir 'BUILD-NOTES.md')
 Write-Host "wrote BUILD-NOTES.md (HonedMetal.dll $len bytes, sha256 $sha)"
 Get-ChildItem $OutDir | Format-Table Name, Length
+
+# robocopy (inside New-SourceZip) exits 1 when it copied files; the runner would otherwise report that as the step result
+$global:LASTEXITCODE = 0
