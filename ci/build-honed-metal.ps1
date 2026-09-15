@@ -30,7 +30,7 @@ if ($CommonRef -ne 'master') { Invoke-Checked git checkout --quiet $CommonRef }
 $commonSha = (git rev-parse HEAD).Trim()
 Pop-Location
 Write-Host "ianpatt/common = $commonSha"
-Invoke-Checked cmake -S $commonSrc -B "$commonSrc\build" -G "Visual Studio 17 2022" -A x64 "-DCMAKE_INSTALL_PREFIX=$extern"
+Invoke-Checked cmake '-S' $commonSrc '-B' "$commonSrc\build" '-G' 'Visual Studio 17 2022' '-A' 'x64' "-DCMAKE_INSTALL_PREFIX=$extern"
 Invoke-Checked cmake --build "$commonSrc\build" --config Release --target install
 
 # ---- 2. ianpatt/skse64 at the tag that matches the game ---------------------------------------------------
@@ -86,7 +86,7 @@ set_target_properties(HonedMetal PROPERTIES PREFIX "" OUTPUT_NAME "HonedMetal")
 Get-Content "$work\CMakeLists.txt"
 
 # ---- 4. configure + build ---------------------------------------------------------------------------------
-Invoke-Checked cmake -S $work -B "$work\build" -G "Visual Studio 17 2022" -A x64 "-DCMAKE_PREFIX_PATH=$extern"
+Invoke-Checked cmake '-S' $work '-B' "$work\build" '-G' 'Visual Studio 17 2022' '-A' 'x64' "-DCMAKE_PREFIX_PATH=$extern"
 Invoke-Checked cmake --build "$work\build" --config Release --target HonedMetal
 $dll = Get-ChildItem -Recurse -Filter HonedMetal.dll "$work\build" | Select-Object -First 1
 if (-not $dll) { throw 'HonedMetal.dll not produced' }
@@ -113,7 +113,7 @@ assert not any(d.startswith(('vcruntime', 'msvcp', 'api-ms-win-crt')) for d in c
 print('version block OK')
 '@
 $verify | Out-File -Encoding ascii "$work\verify_version_block.py"
-Invoke-Checked python -m pip install --quiet pefile
+Invoke-Checked python '-m' pip install --quiet pefile
 Invoke-Checked python "$work\verify_version_block.py" $dll.FullName
 
 # ---- 6. package -------------------------------------------------------------------------------------------
