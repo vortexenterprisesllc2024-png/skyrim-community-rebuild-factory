@@ -236,33 +236,61 @@ namespace CraftingUtils
 	}
 
 
-	extern SInt32 getCachedItemCount(StaticFunctionTag*, TESObjectREFR *src, TESForm *item)
+	/* Honed Metal 1.26.1 / HonedMetal.bsa HMCraftingUtils:
+	 *   Int[] Function getItemsCount(ObjectReference container, Form[] items) native global
+	 * Published Nexus "Source Code" v7 registered getCachedItemCount(REFR*, Form*) instead.
+	 * Extra-change deltas are cached per container (same idea as v7); TESContainer base
+	 * counts are added per requested form so NPC stock items are visible. */
+	extern VMResultArray<SInt32> getItemsCount(StaticFunctionTag*, TESObjectREFR *src, VMArray<TESForm*> items)
 	{
-		static std::vector<std::pair<TESForm*, SInt32>>	cache;
-		static TESObjectREFR							*last = nullptr;
+		static std::map<TESForm*, SInt32>	extra_delta;
+		static TESObjectREFR				*last = nullptr;
+		VMResultArray<SInt32>				result;
+		const UInt32						n = items.Length();
+		TESContainer						*container = nullptr;
 
-		if (!(src && item) )
-		{	cache.clear();
+		result.resize(n);
+		if (!src)
+		{	extra_delta.clear();
 			last = nullptr;
+			for (UInt32 i = 0; i < n; ++i)
+				result[i] = -1;
+			return (result);
 		}
-		else if (last != src)
+		if (last != src)
 		{	last = src;
-			cache.clear();
+			extra_delta.clear();
 			ExtraContainerChanges *inventory = (ExtraContainerChanges*)(*src).extraData.GetByType(kExtraData_ContainerChanges);
 			EntryDataList		  *itemlst;
-			TESContainer		  *container;
 
-			if (inventory && (itemlst = (*(*inventory).data).objList))
-			{	container = DYNAMIC_CAST((*src).baseForm, TESForm, TESContainer);
-				for (tList<InventoryEntryData>::Iterator it = (*itemlst).Begin(); !it.End(); ++it)
-					cache.emplace_back((**it).type, (**it).countDelta + (container ? (SInt32)(*container).CountItem((**it).type) : 0) );
+			if (inventory && (*inventory).data && (itemlst = (*(*inventory).data).objList))
+			{	for (tList<InventoryEntryData>::Iterator it = (*itemlst).Begin(); !it.End(); ++it)
+					extra_delta[(**it).type] = (**it).countDelta;
 			}
 		}
-		for (size_t i = cache.size() - 1; i < INT_MAX; --i)
-		{	if (cache[i].first == item)
-				return (cache[i].second);
+		container = DYNAMIC_CAST((*src).baseForm, TESForm, TESContainer);
+		for (UInt32 i = 0; i < n; ++i)
+		{	TESForm									*form = nullptr;
+			SInt32									count = 0;
+			std::map<TESForm*, SInt32>::const_iterator	extra;
+
+			items.Get(&form, i);
+			if (!form)
+			{	result[i] = -1;
+				continue ;
+			}
+			if (container)
+				count += (SInt32)(*container).CountItem(form);
+			extra = extra_delta.find(form);
+			if (extra != extra_delta.end() )
+				count += (*extra).second;
+			else if (!container)
+			{	result[i] = -1;
+				continue ;
+			}
+			result[i] = count;
 		}
-		return (-1);
+		return (result);
 	}
 
 
@@ -491,8 +519,8 @@ namespace CraftingUtils
 			"getPerksFromIni", "HMCraftingUtils", getPerksFromIni, registry) );
 		(*registry).RegisterFunction(new NativeFunction2<StaticFunctionTag, UInt32, TESObjectREFR*, TESForm*>(
 			"getDisplayCostForItem", "HMCraftingUtils", getDisplayCostForItem, registry) );
-		(*registry).RegisterFunction(new NativeFunction2<StaticFunctionTag, SInt32, TESObjectREFR*, TESForm*>(
-			"getCachedItemCount", "HMCraftingUtils", getCachedItemCount, registry) );
+		(*registry).RegisterFunction(new NativeFunction2<StaticFunctionTag, VMResultArray<SInt32>, TESObjectREFR*, VMArray<TESForm*>>(
+			"getItemsCount", "HMCraftingUtils", getItemsCount, registry) );
 		(*registry).RegisterFunction(new NativeFunction2<StaticFunctionTag, UInt32, BGSPerk*, BSFixedString>(
 			"getSkillReqForPerk", "HMCraftingUtils", getSkillReqForPerk, registry) );
 		(*registry).RegisterFunction(new NativeFunction2<StaticFunctionTag, bool, TESObjectREFR*, TESObjectREFR*>(
@@ -504,7 +532,7 @@ namespace CraftingUtils
 		(*registry).SetFunctionFlags("HMCraftingUtils", "registerForCraftingSession", thread_safe_flag);
 		(*registry).SetFunctionFlags("HMCraftingUtils", "getPerksFromIni", thread_safe_flag);
 		(*registry).SetFunctionFlags("HMCraftingUtils", "getDisplayCostForItem", thread_safe_flag);
-		(*registry).SetFunctionFlags("HMCraftingUtils", "getCachedItemCount", thread_safe_flag);
+		(*registry).SetFunctionFlags("HMCraftingUtils", "getItemsCount", thread_safe_flag);
 		(*registry).SetFunctionFlags("HMCraftingUtils", "getSkillReqForPerk", thread_safe_flag);
 		_MESSAGE("Papyrus registrations complete.");
 		return (true);

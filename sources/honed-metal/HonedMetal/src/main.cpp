@@ -44,7 +44,7 @@ extern "C"
 	__declspec(dllexport) SKSEPluginVersionData SKSEPlugin_Version = 
 	{
 		SKSEPluginVersionData::kVersion,	//dataVersion
-		7,									//pluginVersion
+		8,									//pluginVersion (Honed Metal 1.26.1)
 		"HonedMetal",						//name
 		"a_retarded_monkey",				//author
 		"404@nowhere.com",					//email
@@ -59,7 +59,7 @@ extern "C"
 	{	
 		(*info).infoVersion = PluginInfo::kInfoVersion;
 		(*info).name = "HonedMetal";
-		(*info).version = 7;
+		(*info).version = 8;
 		return (validate_plugin(skse) );
 	}
 	#endif

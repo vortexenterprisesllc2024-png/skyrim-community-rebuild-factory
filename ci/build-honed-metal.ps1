@@ -2,9 +2,10 @@
 # Classic skse64 plugin (NOT CommonLib): every game address it uses is a constant inside ianpatt/skse64's own
 # headers/sources, so the plugin has to be compiled against the SKSE release that matches the game. A version-tag
 # patch of an older build only fools the loader (Jo's 15 Sep test: CTD before the main menu).
-# Source: Nexus 61015 file 466884 "Source Code" v7, unmodified, kept in this repo under sources/honed-metal/HonedMetal/.
+# Source: Nexus 61015 file 466884 "Source Code" v7, plus a documented 1.26.1 script-compat patch
+# (getItemsCount / pluginVersion 8) in sources/honed-metal/HonedMetal/. See sources/honed-metal/README.md.
 # The author's ReadMe.txt recipe (Visual Studio: build skse64 as a Static Library + skse64_common, then the plugin)
-# is reproduced here with a small CMake wrapper written at build time, so nothing in the author's tree is edited.
+# is reproduced here with a small CMake wrapper written at build time.
 param(
     [string]$SkseRef = 'v2.3.1',                 # ianpatt/skse64 tag; its skse_version.h must say CURRENT_RELEASE_RUNTIME = 1.7.104
     [string]$CommonRef = 'master',               # ianpatt/common (SKSE's shared utility library); pinned sha goes into the notes
@@ -107,9 +108,12 @@ print(f'name={name!r} author={author!r} pluginVersion={pluginVersion} versionInd
 crt = [i.dll.decode().lower() for i in pe.DIRECTORY_ENTRY_IMPORT]
 print('imports:', crt)
 assert name == 'HonedMetal', name
+assert pluginVersion == 8, 'pluginVersion must be 8 (Honed Metal 1.26.1)'
 assert compat[0] == 0x01070680, 'compatibleVersions[0] is not 1.7.104.0'
 assert indep == 0 and indepEx == 0, 'a classic SKSE plugin must not claim address-library independence'
 assert not any(d.startswith(('vcruntime', 'msvcp', 'api-ms-win-crt')) for d in crt), 'expected /MT (static CRT)'
+assert b'getItemsCount' in data, 'DLL must register getItemsCount (Honed Metal 1.26.1 / HonedMetal.bsa)'
+assert b'getCachedItemCount' not in data, 'stale v7 getCachedItemCount must not remain (unbound GetItemsCount on 1.26.1 scripts)'
 print('version block OK')
 '@
 $verify | Out-File -Encoding ascii "$work\verify_version_block.py"
@@ -127,7 +131,7 @@ $sha = (Get-FileHash -Algorithm SHA256 (Join-Path $OutDir 'HonedMetal.dll')).Has
 "$sha  HonedMetal.dll" | Out-File -Encoding ascii (Join-Path $OutDir 'HonedMetal.dll.sha256')
 New-SourceZip -SrcDir $work -ZipPath (Join-Path $OutDir 'HonedMetal-src-v7-1.7.104-rebuild-src.zip') -ExcludeDirNames @('build') -Readme @"
 Honed Metal (Nexus 61015) SKSE plugin - source as rebuilt for Skyrim AE 1.7.104 / SKSE 2.3.1.
-HonedMetal source: Nexus 61015 file 466884 "Source Code" v7 by a_retarded_monkey, unmodified (per-file SHA-256 in BUILD-NOTES.md).
+HonedMetal source: Nexus 61015 file 466884 "Source Code" v7 by a_retarded_monkey, plus the 1.26.1 getItemsCount / pluginVersion 8 compat patch (see BUILD-NOTES.md).
 CMakeLists.txt + verify_version_block.py: the factory's wrapper (replaces the author's Visual Studio steps; see ReadMe.txt).
 Built against: https://github.com/ianpatt/skse64 tag $SkseRef (commit $skseSha) as a static library (skse64.cpp excluded)
                https://github.com/ianpatt/common commit $commonSha (installed with cmake, prefix extern/)
@@ -144,7 +148,7 @@ $notes += ""
 $notes += "| Field | Value |"
 $notes += "|---|---|"
 $notes += "| Upstream | Nexus 61015 (Honed Metal - NPC Crafting and Enchanting Services), author a_retarded_monkey |"
-$notes += "| Source used | Nexus 61015 file 466884 ``Source Code`` v7 - unmodified; per-file SHA-256 below; the 1.26.1 FOMOD binary reports plugin version 8, this source says 7 (the author published no later source) |"
+$notes += "| Source used | Nexus 61015 file 466884 ``Source Code`` v7 plus the 1.26.1 script-compat patch (``getItemsCount`` / ``pluginVersion`` 8). Per-file SHA-256 below. |"
 $notes += "| Upstream licence | per the Nexus 61015 page / author (source ships with derivatives - this zip and the repo copy) |"
 $notes += "| Build model | classic skse64 plugin: ianpatt/skse64 compiled as a static library + skse64_common + ianpatt/common (author's ReadMe.txt), NOT CommonLibSSE |"
 $notes += "| skse64 | https://github.com/ianpatt/skse64 tag ``$SkseRef`` (commit ``$skseSha``): CURRENT_RELEASE_RUNTIME = RUNTIME_VERSION_1_7_104, SKSE 2.3.1 |"
@@ -154,18 +158,20 @@ $notes += "| Build | ``cmake --build build --config Release --target HonedMetal`
 $notes += "| DLL | ``HonedMetal.dll`` |"
 $notes += "| DLL size | $len bytes |"
 $notes += "| DLL SHA256 | ``$sha`` |"
-$notes += "| Version block | compatibleVersions[0] = 1.7.104.0 (0x01070680), no address-library-independence flags - correct for a classic plugin, which must be rebuilt for each game version (verified by verify_version_block.py in the workflow) |"
+$notes += "| Version block | pluginVersion = 8 (1.26.1), compatibleVersions[0] = 1.7.104.0 (0x01070680), no address-library-independence flags - correct for a classic plugin, which must be rebuilt for each game version (verified by verify_version_block.py in the workflow) |"
 $notes += "| Compiler | MSVC (Visual Studio 2022, v143) on windows-2022; see the workflow log for the exact ``cl.exe`` version |"
-$notes += "| Smoke test | NOT TESTED by the workflow - Jo must SKSE-boot to the main menu with music, see ``HonedMetal.dll (...) loaded correctly`` in skse64.log, then run Farengar's enchant service |"
+$notes += "| Smoke test | NOT TESTED by the workflow - Jo must SKSE-boot to the main menu with music, see ``HonedMetal.dll (...) loaded correctly`` in skse64.log. Papyrus.0.log must not show unbound GetItemsCount / failed getCachedItemCount bind. Then run Farengar's (or Wuunferth's) enchant service. |"
 $notes += ""
-$notes += "## Source files (Nexus 61015 file 466884, unmodified)"
+$notes += "## Source files (SHA-256 of the tree that was compiled)"
 $notes += ""
 foreach ($h in $srcHashes) { $notes += "- ``$h``" }
 $notes += ""
 $notes += "## Source changes made for this rebuild"
 $notes += ""
-$notes += "- None to the author's files. The wrapper CMakeLists.txt reproduces HonedMetal.vcxproj's Release|x64 settings and the ReadMe's static-library recipe; skse64.cpp (the SKSE DLL's own DllMain and loader glue) is left out of the static library, as a plugin must not carry it."
-$notes += "- TARGET_RUNTIME resolves to CURRENT_RELEASE_RUNTIME from the 2.3.1 headers (SKSE_resolver.h), so the runtime check in validate_plugin() and compatibleVersions[0] are both 1.7.104.0 without touching main.cpp."
+$notes += "- Compatibility patch vs Nexus 61015 file 466884: replace ``getCachedItemCount(REFR*, Form*) -> SInt32`` with ``getItemsCount(REFR*, Form[]) -> Int[]`` so the native matches Honed Metal 1.26.1 ``HonedMetal.bsa`` ``HMCraftingUtils``. Extra-change deltas stay cached per container; TESContainer base counts are added per requested form."
+$notes += "- ``pluginVersion`` set to 8 (1.26.1 FOMOD identity). Published v7 source said 7; the author published no later source."
+$notes += "- The wrapper CMakeLists.txt reproduces HonedMetal.vcxproj's Release|x64 settings and the ReadMe's static-library recipe; skse64.cpp (the SKSE DLL's own DllMain and loader glue) is left out of the static library, as a plugin must not carry it."
+$notes += "- TARGET_RUNTIME resolves to CURRENT_RELEASE_RUNTIME from the 2.3.1 headers (SKSE_resolver.h), so the runtime check in validate_plugin() and compatibleVersions[0] are both 1.7.104.0."
 $notes += ""
 $notes += "## Caveats"
 $notes += ""

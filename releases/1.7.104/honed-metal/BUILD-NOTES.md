@@ -1,5 +1,7 @@
 # BUILD-NOTES - Honed Metal (SKSE plugin) - Skyrim AE 1.7.104.0 / SKSE 2.3.1
 
+**This folder still holds the pre-fix factory DLL** (workflow run 35011091283: `getCachedItemCount` only, `pluginVersion` 7). It is **not** binary-compatible with Honed Metal 1.26.1 scripts. Do not install it. A Windows/MSVC factory rebuild of the `getItemsCount` / `pluginVersion` 8 source will replace these artifacts.
+
 Community rebuild from the author's published source. Not an official author build. Built on a GitHub Actions `windows-2022`
 runner by the skyrim-community-rebuild-factory workflow (run 35011091283, 2026-09-15 19:02 UTC).
 This replaces the 15 Sep 2026 version-tag hex patch of the 1.6.1170 DLL, which SKSE loaded and which crashed before the main menu.
