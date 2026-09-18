@@ -89,7 +89,7 @@ namespace AdventureXP
         while (data->levelThreshold > 0.0f && data->xp >= data->levelThreshold && guard++ < 16) {
             const float leftover = data->xp - data->levelThreshold;
             skills->AdvanceLevel(true);
-            data->xp = std::max(0.0f, leftover);
+            data->xp = (std::max)(0.0f, leftover);
             logger::info("Player leveled up (leftover XP {:.1f})", data->xp);
             Notify("You have advanced a level.");
             RE::PlaySound("UILevelUp");

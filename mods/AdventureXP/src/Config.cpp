@@ -64,7 +64,6 @@ namespace AdventureXP
 
         CSimpleIniA ini;
         ini.SetUnicode();
-        ini.SetAllowEmptyValues(false);
 
         const SI_Error rc = ini.LoadFile(path_.c_str());
         if (rc < 0) {

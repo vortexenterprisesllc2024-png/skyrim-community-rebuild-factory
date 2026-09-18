@@ -33,7 +33,7 @@ namespace AdventureXP::Math
     // base + perLevel * (level-1)^exponent.
     inline float FallbackThresholdForLevel(std::int32_t level, const Curve& curve)
     {
-        const std::int32_t n = std::max(1, level);
+        const std::int32_t n = (std::max)(1, level);
         return curve.base + curve.perLevel * std::pow(static_cast<float>(n - 1), curve.exponent);
     }
 
