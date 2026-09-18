@@ -89,6 +89,16 @@ target_link_libraries(${PROJECT_NAME} PRIVATE adventurexp_math)
 target_precompile_headers(${PROJECT_NAME} PRIVATE include/AdventureXP/PCH.h)
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_23)
 
+# __AdventureXPPlugin.cpp (from add_commonlibsse_plugin) uses "sv" literals
+# and is not guaranteed to pick up the PCH on MSVC.
+if(MSVC)
+    target_compile_options(
+        ${PROJECT_NAME}
+        PRIVATE
+        "/FI${CMAKE_CURRENT_SOURCE_DIR}/include/AdventureXP/PluginLiterals.h"
+    )
+endif()
+
 find_path(SIMPLEINI_INCLUDE_DIR NAMES SimpleIni.h)
 if(SIMPLEINI_INCLUDE_DIR)
     target_include_directories(${PROJECT_NAME} PRIVATE "${SIMPLEINI_INCLUDE_DIR}")
