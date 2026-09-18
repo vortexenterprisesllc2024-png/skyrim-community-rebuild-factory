@@ -61,17 +61,21 @@ namespace AdventureXP
         return instance;
     }
 
-    RE::PlayerSkills* PlayerXp::Skills() const
+    namespace
     {
-        auto* player = RE::PlayerCharacter::GetSingleton();
-        if (!player) {
-            return nullptr;
+        RE::PlayerCharacter::PlayerSkills* LiveSkills()
+        {
+            auto* player = RE::PlayerCharacter::GetSingleton();
+            if (!player) {
+                return nullptr;
+            }
+            return player->GetPlayerRuntimeData().skills;
         }
-        return player->GetPlayerRuntimeData().skills;
     }
 
-    void PlayerXp::TryLevelUp(RE::PlayerSkills* skills)
+    void PlayerXp::TryLevelUp()
     {
+        auto* skills = LiveSkills();
         if (!skills || !skills->data) {
             return;
         }
@@ -90,7 +94,7 @@ namespace AdventureXP
             const float leftover = data->xp - data->levelThreshold;
             skills->AdvanceLevel(true);
             data->xp = (std::max)(0.0f, leftover);
-            logger::info("Player leveled up (leftover XP {:.1f})", data->xp);
+            logger::info("Player leveled up (leftover XP {:.1f})", leftover);
             Notify("You have advanced a level.");
             RE::PlaySound("UILevelUp");
         }
@@ -98,7 +102,7 @@ namespace AdventureXP
 
     float PlayerXp::CurrentPercent() const
     {
-        auto* skills = Skills();
+        auto* skills = LiveSkills();
         if (!skills || !skills->data) {
             return 0.0f;
         }
@@ -117,7 +121,7 @@ namespace AdventureXP
             return;
         }
 
-        auto* skills = Skills();
+        auto* skills = LiveSkills();
         if (!skills || !skills->data) {
             logger::warn("Cannot award XP: PlayerSkills unavailable");
             return;
@@ -131,7 +135,7 @@ namespace AdventureXP
         }
 
         skills->data->xp += amount;
-        TryLevelUp(skills);
+        TryLevelUp();
         SyncGlobal();
 
         const float pct = CurrentPercent();

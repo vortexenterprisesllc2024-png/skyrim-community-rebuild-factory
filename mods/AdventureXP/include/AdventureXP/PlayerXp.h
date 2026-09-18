@@ -3,11 +3,6 @@
 #include <cstdint>
 #include <string_view>
 
-namespace RE
-{
-    class PlayerSkills;
-}
-
 namespace AdventureXP
 {
     enum class AwardSource : std::uint8_t
@@ -34,7 +29,6 @@ namespace AdventureXP
         float CurrentPercent() const;
 
     private:
-        RE::PlayerSkills* Skills() const;
-        void TryLevelUp(RE::PlayerSkills* skills);
+        void TryLevelUp();
     };
 }
