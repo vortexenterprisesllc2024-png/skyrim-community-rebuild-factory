@@ -229,7 +229,7 @@ namespace AdventureXP
                     return RE::BSEventNotifyControl::kContinue;
                 }
                 // After a fight ends, the current cell may now be marked cleared.
-                if (static_cast<std::uint32_t>(ev->newState) == 0 && IsPlayerRef(ev->actor.get())) {
+                if (ev->newState.get() == RE::ACTOR_COMBAT_STATE::kNone && IsPlayerRef(ev->actor.get())) {
                     CheckPlayerLocation();
                 }
                 return RE::BSEventNotifyControl::kContinue;
@@ -288,7 +288,7 @@ namespace AdventureXP
                 if (!actor || !actor->IsPlayerRef()) {
                     return RE::BSEventNotifyControl::kContinue;
                 }
-                if (static_cast<std::uint32_t>(ev->flags) != 0) {  // CellFlag::kEnter
+                if (ev->flags.get() != RE::BGSActorCellEvent::CellFlag::kEnter) {
                     return RE::BSEventNotifyControl::kContinue;
                 }
                 CheckPlayerLocation();
