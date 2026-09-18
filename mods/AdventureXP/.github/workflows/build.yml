@@ -1,0 +1,79 @@
+name: build
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  host-tests:
+    name: Host tests (math, ESL, zip layout)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Configure host tests
+        run: cmake --preset host-tests
+      - name: Build and run math tests
+        run: |
+          cmake --build --preset host-tests
+          ctest --preset host-tests --output-on-failure
+      - name: Generate ESL and validate pack layout
+        run: |
+          python3 scripts/generate_esl.py
+          python3 tests/test_esl.py
+          python3 tests/test_pack_layout.py
+          python3 scripts/assert-cleanroom.py
+
+  windows-msvc:
+    name: Windows MSVC AdventureXP.dll
+    # windows-latest is VS 2026 as of mid-2026 and has no VS 2022 instance.
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Ninja
+        run: choco install ninja -y
+
+      - name: Clone vcpkg
+        run: |
+          git clone --depth 1 https://github.com/microsoft/vcpkg.git C:\vcpkg
+          git -C C:\vcpkg fetch --depth 1 origin ee12231b20c95013c6638d845d04c91559a1d1ff
+          git -C C:\vcpkg checkout ee12231b20c95013c6638d845d04c91559a1d1ff
+          C:\vcpkg\bootstrap-vcpkg.bat
+          echo "VCPKG_ROOT=C:\vcpkg" >> $env:GITHUB_ENV
+
+      - name: MSVC environment
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Configure
+        run: cmake --preset windows-msvc-release
+
+      - name: Build
+        run: cmake --build --preset windows-msvc-release --parallel
+
+      - name: Pack Vortex zip
+        run: |
+          python scripts/generate_esl.py
+          python scripts/pack.py --source
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: AdventureXP-4.0.0
+          path: |
+            dist/packed/AdventureXP-4.0.0.zip
+            dist/packed/AdventureXP-4.0.0-SOURCE.zip
+          if-no-files-found: error

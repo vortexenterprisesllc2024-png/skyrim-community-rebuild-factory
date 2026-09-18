@@ -1,0 +1,10 @@
+AdventureXP 4.0.0
+Copyright 2026 Jo
+
+Original plugin sources in this repository are MIT-licensed (see LICENSE).
+
+This project FetchContent-builds CommonLibSSE-NG (alandtse/CommonLibSSE-NG,
+GPL-3.0-or-later) as a static library. CommonLibSSE-NG is not vendored in
+the default source tree. A linked AdventureXP.dll is subject to GPL-3.0-or-later.
+
+No files from zax’s Experience mod are included or used.
