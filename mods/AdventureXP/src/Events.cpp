@@ -172,7 +172,7 @@ namespace AdventureXP
             public RE::BSTEventSink<RE::TESQuestStageEvent>,
             public RE::BSTEventSink<RE::TESCombatEvent>,
             public RE::BSTEventSink<RE::TESDeathEvent>,
-            public RE::BSTEventSink<RE::BGSActorCellEvent>,
+            public RE::BSTEventSink<RE::TESActorLocationChangeEvent>,
             public RE::BSTEventSink<RE::LocationDiscovery::Event>,
             public RE::BSTEventSink<RE::BooksRead::Event>,
             public RE::BSTEventSink<RE::SkillIncrease::Event>
@@ -279,16 +279,13 @@ namespace AdventureXP
                 return RE::BSEventNotifyControl::kContinue;
             }
 
-            RE::BSEventNotifyControl ProcessEvent(const RE::BGSActorCellEvent* ev, RE::BSTEventSource<RE::BGSActorCellEvent>*) override
+            RE::BSEventNotifyControl ProcessEvent(const RE::TESActorLocationChangeEvent* ev, RE::BSTEventSource<RE::TESActorLocationChangeEvent>*) override
             {
                 if (!ev) {
                     return RE::BSEventNotifyControl::kContinue;
                 }
                 const auto actor = ev->actor.get();
                 if (!actor || !actor->IsPlayerRef()) {
-                    return RE::BSEventNotifyControl::kContinue;
-                }
-                if (ev->flags.get() != RE::BGSActorCellEvent::CellFlag::kEnter) {
                     return RE::BSEventNotifyControl::kContinue;
                 }
                 CheckPlayerLocation();
@@ -397,7 +394,7 @@ namespace AdventureXP
             holder->AddEventSink<RE::TESQuestStageEvent>(&handler);
             holder->AddEventSink<RE::TESCombatEvent>(&handler);
             holder->AddEventSink<RE::TESDeathEvent>(&handler);
-            holder->AddEventSink<RE::BGSActorCellEvent>(&handler);
+            holder->AddEventSink<RE::TESActorLocationChangeEvent>(&handler);
         } else {
             logger::error("ScriptEventSourceHolder missing");
         }
@@ -420,6 +417,6 @@ namespace AdventureXP
             logger::warn("SkillIncrease event source missing");
         }
 
-        logger::info("Registered quest, discovery, cell, combat, death, book, and skill-up sinks");
+        logger::info("Registered quest, discovery, location, combat, death, book, and skill-up sinks");
     }
 }
