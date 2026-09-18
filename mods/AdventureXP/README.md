@@ -2,7 +2,7 @@
 
 Working title. Public name is TBD.
 
-A **brand-new**, clean-room SKSE plugin for *The Elder Scrolls V: Skyrim Special Edition* (Anniversary Edition **1.7.104.0**). It awards **player level XP** for finishing quests, discovering locations, and clearing dungeons — the same kind of adventure-first progression you see in EverQuest and other RPGs, rather than leveling up because you ground a skill.
+A **brand-new**, clean-room SKSE plugin for *The Elder Scrolls V: Skyrim Special Edition* (Anniversary Edition **1.7.104.0**), public name **Adventure EXP w Playstyle Presets**. It awards **player level XP** for finishing quests, discovering locations, and clearing dungeons — the same kind of adventure-first progression you see in EverQuest and other RPGs, rather than leveling up because you ground a skill.
 
 **Version 4.0.0** is a new product line. It is not a continuation of anyone else’s 3.x package.
 
@@ -115,7 +115,9 @@ cmake --build --preset windows-msvc-release --parallel
 python scripts\pack.py --source
 ```
 
-CMake FetchContent-pulls [alandtse/CommonLibSSE-NG](https://github.com/alandtse/CommonLibSSE-NG) **v8.0.1**. `add_commonlibsse_plugin` embeds product version **4.0.0** in the DLL.
+CMake FetchContent-pins [alandtse/CommonLibVR](https://github.com/alandtse/CommonLibVR) **`d13d10a0ccb4945870eb841bf1ad8a6cf5ed84dd`** (CommonLibSSE-NG 8.0.1, `Format::SSEv5`). Configure fails if `IDDB.h` lacks SSEv5. `add_commonlibsse_plugin` embeds product version **4.0.0** and Address Library v5 compatibility.
+
+`SKSEPluginLoad` writes `AdventureXP.log` with Windows folder APIs (no REL), calls `SKSE::Init(skse, {.log=false})`, gates on SKSE `RuntimeVersion()` **1.7.104.x**, and defers Address Library / sinks / Papyrus until `kDataLoaded`. A foreign runtime logs and returns true without hooks.
 
 A GitHub Actions workflow (`.github/workflows/build.yml`) builds the Windows DLL and uploads both zips. That job does not run on this Origin remote — point a GitHub repo at the same tree, or run `scripts\build-vs2022.ps1` on a VS 2022 machine.
 

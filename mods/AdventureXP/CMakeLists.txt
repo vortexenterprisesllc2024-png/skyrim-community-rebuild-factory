@@ -48,19 +48,35 @@ set(ENABLE_SKYRIM_AE ON CACHE BOOL "CommonLibSSE-NG: AE runtime (1.6 / 1.7.x)" F
 set(ENABLE_SKYRIM_VR OFF CACHE BOOL "CommonLibSSE-NG: VR runtime" FORCE)
 set(BUILD_TESTS OFF CACHE BOOL "CommonLibSSE-NG tests" FORCE)
 
-find_package(CommonLibSSE CONFIG QUIET)
-if(NOT CommonLibSSE_FOUND)
-    include(FetchContent)
-    FetchContent_Declare(
-        CommonLibSSE
-        GIT_REPOSITORY https://github.com/alandtse/CommonLibSSE-NG.git
-        GIT_TAG v8.0.1
-        GIT_SHALLOW TRUE
-    )
-    FetchContent_MakeAvailable(CommonLibSSE)
-    list(APPEND CMAKE_MODULE_PATH "${commonlibsse_SOURCE_DIR}/cmake")
-    include(CommonLibSSE)
+# Factory pin: alandtse/CommonLibVR ng @ d13d10a0 == CommonLibSSE-NG 8.0.1
+# and is the SHA Get-CommonLib refuses to build without Format::SSEv5.
+# Do not take a vcpkg/config CommonLib (those pins are often pre-format-5).
+# Do not use a shallow v8.0.1 tag clone — pin the exact SSEv5 commit.
+set(ADVENTUREXP_COMMONLIB_GIT https://github.com/alandtse/CommonLibVR.git)
+set(ADVENTUREXP_COMMONLIB_SHA d13d10a0ccb4945870eb841bf1ad8a6cf5ed84dd)
+
+include(FetchContent)
+FetchContent_Declare(
+    CommonLibSSE
+    GIT_REPOSITORY ${ADVENTUREXP_COMMONLIB_GIT}
+    GIT_TAG ${ADVENTUREXP_COMMONLIB_SHA}
+    GIT_SHALLOW FALSE
+)
+FetchContent_MakeAvailable(CommonLibSSE)
+
+if(NOT EXISTS "${commonlibsse_SOURCE_DIR}/include/REL/IDDB.h")
+    message(FATAL_ERROR "CommonLib FetchContent did not produce include/REL/IDDB.h")
 endif()
+file(READ "${commonlibsse_SOURCE_DIR}/include/REL/IDDB.h" ADVENTUREXP_IDDB_H)
+if(NOT ADVENTUREXP_IDDB_H MATCHES "SSEv5")
+    message(FATAL_ERROR
+        "CommonLib at ${ADVENTUREXP_COMMONLIB_SHA} has no Format::SSEv5 — "
+        "refusing to build a DLL that cannot read Address Library format 5")
+endif()
+message(STATUS "CommonLibSSE-NG at ${ADVENTUREXP_COMMONLIB_SHA} (Format::SSEv5 present)")
+
+list(APPEND CMAKE_MODULE_PATH "${commonlibsse_SOURCE_DIR}/cmake")
+include(CommonLibSSE)
 
 set(ADVENTUREXP_SOURCES
     src/Plugin.cpp
@@ -80,6 +96,7 @@ add_commonlibsse_plugin(
     AUTHOR "Jo"
     EMAIL ""
     VERSION ${PROJECT_VERSION}
+    MINIMUM_SKSE_VERSION 2.3.1
     USE_ADDRESS_LIBRARY
     SOURCES ${ADVENTUREXP_SOURCES}
 )
