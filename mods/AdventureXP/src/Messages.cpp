@@ -9,11 +9,14 @@ namespace AdventureXP
             return;
         }
 
-        // DebugNotification is the stock HUD toast (same channel as
-        // "You discovered X" / skill-up text). No third-party SWF.
+        // Stock HUD toast ("You discovered X" / skill-up channel). CommonLib
+        // v8.0.1 does not export RE::DebugNotification; call the Address
+        // Library AE/SE IDs directly. No third-party SWF.
         const std::string copy{ text };
         SKSE::GetTaskInterface()->AddTask([copy]() {
-            RE::DebugNotification(copy.c_str(), nullptr, true);
+            using func_t = void (*)(const char*, const char*, bool);
+            static REL::Relocation<func_t> notify{ REL::RelocationID(52050, 52933) };
+            notify(copy.c_str(), nullptr, true);
         });
     }
 }
