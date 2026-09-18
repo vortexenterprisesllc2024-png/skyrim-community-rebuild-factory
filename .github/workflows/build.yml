@@ -49,10 +49,13 @@ jobs:
     name: Windows MSVC AdventureXP.dll
     # Factory note: windows-latest is VS 2026 (no VS 2022 instance).
     # CommonLibSSE-NG / MSVC static runtime builds use windows-2022.
+    #
+    # Path quirk: building under
+    #   D:/a/skyrim-community-rebuild-factory/skyrim-community-rebuild-factory/mods/AdventureXP/...
+    # exceeds CMake's 250-char CMAKE_OBJECT_PATH_MAX (fatal C1083 on vcpkg TryCompile).
+    # Stage the tree at C:\axp and keep vcpkg at C:\vp.
+    # ilammy/msvc-dev-cmd overwrites VCPKG_ROOT to the VS-bundled copy; re-pin after it.
     runs-on: windows-2022
-    defaults:
-      run:
-        working-directory: mods/AdventureXP
     env:
       VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}\vcpkg-bincache
       VCPKG_FEATURE_FLAGS: manifests,versions,binarycaching
@@ -63,7 +66,6 @@ jobs:
           python-version: "3.12"
 
       - name: Install Ninja
-        working-directory: ${{ github.workspace }}
         run: choco install ninja -y
 
       - name: Restore vcpkg binary cache
@@ -74,15 +76,29 @@ jobs:
           restore-keys: |
             vcpkg-bincache-adventurexp-
 
+      - name: Stage source at C:\axp
+        run: |
+          git config --system core.longpaths true
+          if (Test-Path C:\axp) { Remove-Item -Recurse -Force C:\axp }
+          New-Item -ItemType Directory -Force -Path C:\axp | Out-Null
+          robocopy "$env:GITHUB_WORKSPACE\mods\AdventureXP" C:\axp /E /XD build /NFL /NDL /NJH /NJS /NP
+          if ($LASTEXITCODE -ge 8) { throw "robocopy failed: $LASTEXITCODE" }
+          Get-ChildItem C:\axp | Select-Object -ExpandProperty Name
+
       - name: Clone vcpkg
-        working-directory: ${{ github.workspace }}
         run: |
           New-Item -ItemType Directory -Force -Path "$env:VCPKG_DEFAULT_BINARY_CACHE" | Out-Null
-          git clone --depth 1 https://github.com/microsoft/vcpkg.git C:\vcpkg
-          git -C C:\vcpkg fetch --depth 1 origin ee12231b20c95013c6638d845d04c91559a1d1ff
-          git -C C:\vcpkg checkout ee12231b20c95013c6638d845d04c91559a1d1ff
-          C:\vcpkg\bootstrap-vcpkg.bat
-          echo "VCPKG_ROOT=C:\vcpkg" >> $env:GITHUB_ENV
+          $root = "C:\vp"
+          if (-not (Test-Path "$root\.git")) {
+            git clone --depth 1 https://github.com/microsoft/vcpkg.git $root
+          }
+          git -C $root fetch --depth 1 origin ee12231b20c95013c6638d845d04c91559a1d1ff
+          git -C $root checkout ee12231b20c95013c6638d845d04c91559a1d1ff
+          if (-not (Test-Path "$root\vcpkg.exe")) {
+            & "$root\bootstrap-vcpkg.bat" -disableMetrics
+          }
+          echo "VCPKG_ROOT=$root" >> $env:GITHUB_ENV
+          echo "VCPKG_INSTALLATION_ROOT=$root" >> $env:GITHUB_ENV
 
       - name: MSVC environment
         uses: ilammy/msvc-dev-cmd@v1
@@ -90,19 +106,34 @@ jobs:
           arch: x64
 
       - name: Configure
-        run: cmake --preset windows-msvc-release
+        working-directory: C:\axp
+        run: |
+          $env:VCPKG_ROOT = "C:\vp"
+          $env:VCPKG_INSTALLATION_ROOT = "C:\vp"
+          cmake --preset windows-msvc-release "-DCMAKE_TOOLCHAIN_FILE=C:/vp/scripts/buildsystems/vcpkg.cmake"
 
       - name: Build
-        run: cmake --build --preset windows-msvc-release --parallel
+        working-directory: C:\axp
+        run: |
+          $env:VCPKG_ROOT = "C:\vp"
+          cmake --build --preset windows-msvc-release --parallel
 
       - name: Pack Vortex zip
+        working-directory: C:\axp
         run: |
           python scripts/generate_esl.py
-          python scripts/pack.py --source
+          python scripts/pack.py --source --dll C:\axp\build\windows-msvc-release\AdventureXP.dll
 
       - name: Confirm AdventureXP.dll in layout zip
+        working-directory: C:\axp
         run: |
-          python -c "import zipfile; names=zipfile.ZipFile('dist/packed/AdventureXP-4.0.0.zip').namelist(); print('\n'.join(names)); assert 'SKSE/Plugins/AdventureXP.dll' in names, names"
+          python -c "import zipfile; names=zipfile.ZipFile(r'dist/packed/AdventureXP-4.0.0.zip').namelist(); print(chr(10).join(names)); assert 'SKSE/Plugins/AdventureXP.dll' in names, names"
+
+      - name: Copy packed zips into workspace
+        run: |
+          New-Item -ItemType Directory -Force -Path "$env:GITHUB_WORKSPACE\mods\AdventureXP\dist\packed" | Out-Null
+          Copy-Item C:\axp\dist\packed\AdventureXP-4.0.0.zip "$env:GITHUB_WORKSPACE\mods\AdventureXP\dist\packed\"
+          Copy-Item C:\axp\dist\packed\AdventureXP-4.0.0-SOURCE.zip "$env:GITHUB_WORKSPACE\mods\AdventureXP\dist\packed\"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
