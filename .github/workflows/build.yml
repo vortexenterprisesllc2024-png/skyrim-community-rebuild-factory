@@ -89,10 +89,12 @@ jobs:
         run: |
           New-Item -ItemType Directory -Force -Path "$env:VCPKG_DEFAULT_BINARY_CACHE" | Out-Null
           $root = "C:\vp"
+          # Full clone: a shallow vcpkg cannot read-tree port git objects
+          # from the manifest builtin-baseline (nlohmann-json failed that way).
           if (-not (Test-Path "$root\.git")) {
-            git clone --depth 1 https://github.com/microsoft/vcpkg.git $root
+            git clone https://github.com/microsoft/vcpkg.git $root
           }
-          git -C $root fetch --depth 1 origin ee12231b20c95013c6638d845d04c91559a1d1ff
+          git -C $root fetch origin ee12231b20c95013c6638d845d04c91559a1d1ff
           git -C $root checkout ee12231b20c95013c6638d845d04c91559a1d1ff
           if (-not (Test-Path "$root\vcpkg.exe")) {
             & "$root\bootstrap-vcpkg.bat" -disableMetrics
@@ -110,7 +112,7 @@ jobs:
         run: |
           $env:VCPKG_ROOT = "C:\vp"
           $env:VCPKG_INSTALLATION_ROOT = "C:\vp"
-          cmake --preset windows-msvc-release "-DCMAKE_TOOLCHAIN_FILE=C:/vp/scripts/buildsystems/vcpkg.cmake"
+          cmake --preset windows-msvc-release "-DCMAKE_TOOLCHAIN_FILE=C:/vp/scripts/buildsystems/vcpkg.cmake" "-DCMAKE_MAKE_PROGRAM=ninja"
 
       - name: Build
         working-directory: C:\axp
