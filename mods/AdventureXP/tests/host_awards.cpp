@@ -125,9 +125,25 @@ int main()
 	Awards::Give(12.f * 0.02f, "quest objective");
 	Awards::Give(0.24f, "kill");
 
+	// 4.2.8: a mid-playthrough install at ~level 24 must not keep a private
+	// pool that starts at 1. +100 quest XP stays in-bar at that level
+	// (threshold 200+50*24 = 1400) instead of immediately AdvanceLevel.
+	Awards::SetState(24, 0.f);
+	assert(Awards::CurrentLevel() == 24);
+	assert(Near(Awards::CurrentPool(), 0.f));
+	Awards::Give(100.f, "main quest");
+	assert(Awards::CurrentLevel() == 24);
+	assert(Near(Awards::CurrentPool(), 100.f));
+	Awards::Give(50.f, "college");
+	assert(Awards::CurrentLevel() == 24);
+	assert(Near(Awards::CurrentPool(), 150.f));
+	const float thresh24 = Awards::ThresholdForLevel(24);
+	assert(thresh24 > 150.f);
+
 	std::cout << "host_awards: Scale ignores global for Quest, Reading, Combat, and SkillUp\n";
 	std::cout << "host_awards: ReadingBaseXP sqrt(gold)*fReadingMult\n";
 	std::cout << "host_awards: SkillUpBaseXP linear in skill level (scale 10)\n";
 	std::cout << "host_awards: Give skips toast when lround(amount) < 1\n";
+	std::cout << "host_awards: SetState(24) keeps +100 XP in-bar (no fake level-1 pool)\n";
 	return 0;
 }

@@ -18,4 +18,15 @@ float ReadingBaseXP(int goldValue, float readingMult);
 float SkillUpBaseXP(float skillUpXP, int skillLevel, float levelScale);
 float ThresholdForLevel(int level);
 
+// 4.2.8: pull g_level / g_pool from the live player so a mid-playthrough
+// install at level 24 does not keep a private pool that starts at 1.
+// No-op in host tests until SetState is used.
+void SyncFromPlayer();
+
+// Host / unit-test hook. Mirrors a loaded player at `level` with `pool` XP
+// toward the next plugin threshold.
+void SetState(int level, float pool);
+int CurrentLevel();
+float CurrentPool();
+
 }  // namespace AdventureXP::Awards

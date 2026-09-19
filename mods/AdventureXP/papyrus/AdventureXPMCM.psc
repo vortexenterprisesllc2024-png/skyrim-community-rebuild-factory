@@ -4,8 +4,8 @@ Scriptname AdventureXPMCM extends SKI_ConfigBase
 Calls only AdventureXP.* natives. Do not add third-party XP plugin calls.}
 
 int Function GetVersion()
-	; 13 = Title Case MCM labels (Crafting, Default, Town) + Crafter playstyle pack display.
-	return 13
+	; 14 = Wizard playstyle pack display (on top of Title Case + Crafter).
+	return 14
 endFunction
 
 string PAGE_GENERAL = "General"

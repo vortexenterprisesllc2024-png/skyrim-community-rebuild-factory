@@ -1,4 +1,5 @@
 #include "AdventureXP/PCH.h"
+#include "AdventureXP/Awards.h"
 #include "AdventureXP/Config.h"
 #include "AdventureXP/Events.h"
 #include "AdventureXP/Papyrus.h"
@@ -112,6 +113,16 @@ namespace
                 "AdventureXP {} ready (AE 1.7.104 / Address Library format 5, preset {})",
                 ADVENTUREXP_VERSION_STRING,
                 AdventureXP::Config::Get().preset);
+            break;
+        case SKSE::MessagingInterface::kNewGame:
+        case SKSE::MessagingInterface::kPostLoadGame:
+            // Player exists now. Sync the award pool to the live level /
+            // vanilla XP bar so a level-24 load does not keep g_level=1.
+            AdventureXP::Awards::SyncFromPlayer();
+            logger::info(
+                "Synced award pool from player (level {}, pool {})",
+                AdventureXP::Awards::CurrentLevel(),
+                AdventureXP::Awards::CurrentPool());
             break;
         default:
             break;

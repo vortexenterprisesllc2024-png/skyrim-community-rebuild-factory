@@ -9,7 +9,7 @@ int main()
 {
 	using namespace AdventureXP;
 
-	assert(kPresets.size() == 19);
+	assert(kPresets.size() == 20);
 	assert(FindPreset("Summoner") != FindPreset("Necromancer"));
 	assert(FindPreset("Conjurer") == FindPreset("Summoner"));
 	assert(FindPreset("Illusionist") != nullptr);
@@ -17,6 +17,15 @@ int main()
 	assert(FindPreset("DestructionMage") == FindPreset("elementalist"));
 	assert(FindPreset("Battlemage") != nullptr);
 	assert(FindPreset("Crafter") != nullptr);
+	assert(FindPreset("Wizard") != nullptr);
+	assert(kWizard.categories.reading == 100.f);
+	assert(kWizard.categories.combat == 10.f);
+	assert(kWizard.skills[SkillKind::Alteration] == 100.f);
+	assert(kWizard.skills[SkillKind::Enchanting] == 100.f);
+	assert(kWizard.skills[SkillKind::Alchemy] == 0.f);
+	assert(kWizard.skills[SkillKind::Speech] == 0.f);
+	assert(kWizard.skills[SkillKind::OneHanded] == 0.f);
+	assert(kMage.skills[SkillKind::Alchemy] == 80.f);
 	assert(kCrafter.categories.crafting == 100.f);
 	assert(kCrafter.categories.combat == 15.f);
 	assert(kCrafter.skills[SkillKind::Smithing] == 100.f);
@@ -176,6 +185,32 @@ int main()
 	assert(cfg.SkillWeight(SkillKind::Enchanting) == 100.f);
 	assert(cfg.SkillWeight(SkillKind::OneHanded) == 0.f);
 	assert(cfg.awardKilling);  // combat > 0 enables killing like other low-combat packs
+
+	assert(cfg.ApplyPreset("Wizard"));
+	assert(cfg.preset == "Wizard");
+	assert(cfg.CategoryWeight(Category::Reading) == 100.f);
+	assert(cfg.CategoryWeight(Category::SkillUp) == 100.f);
+	assert(cfg.CategoryWeight(Category::Quest) == 90.f);
+	assert(cfg.CategoryWeight(Category::Discovery) == 70.f);
+	assert(cfg.CategoryWeight(Category::Crafting) == 20.f);
+	assert(cfg.CategoryWeight(Category::Combat) == 10.f);
+	assert(cfg.CategoryWeight(Category::Clear) == 20.f);
+	assert(cfg.SkillWeight(SkillKind::Alteration) == 100.f);
+	assert(cfg.SkillWeight(SkillKind::Conjuration) == 100.f);
+	assert(cfg.SkillWeight(SkillKind::Destruction) == 100.f);
+	assert(cfg.SkillWeight(SkillKind::Illusion) == 100.f);
+	assert(cfg.SkillWeight(SkillKind::Restoration) == 100.f);
+	assert(cfg.SkillWeight(SkillKind::Enchanting) == 100.f);
+	assert(cfg.SkillWeight(SkillKind::Alchemy) == 0.f);
+	assert(cfg.SkillWeight(SkillKind::Speech) == 0.f);
+	assert(cfg.SkillWeight(SkillKind::Smithing) == 0.f);
+	assert(cfg.SkillWeight(SkillKind::OneHanded) == 0.f);
+	assert(cfg.SkillWeight(SkillKind::Sneak) == 0.f);
+	assert(cfg.awardKilling);
+
+	assert(cfg.ApplyPreset("Mage"));
+	assert(cfg.SkillWeight(SkillKind::Alchemy) == 80.f);
+	assert(cfg.CategoryWeight(Category::Crafting) == 100.f);
 
 	std::cout << "host_presets: ok\n";
 	return 0;

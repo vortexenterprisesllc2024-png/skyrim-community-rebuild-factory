@@ -940,7 +940,55 @@ inline constexpr PlayStylePack kCrafter{
 		SkillKind::Speech, 40),
 };
 
-inline constexpr std::array<PlayStylePack, 19> kPresets = {{
+// Wizard — pays: all six magic schools 100, reading, skill-ups, College/Daedric.
+// Denies: Alchemy/Speech/smithing/combat/stealth 0. Mage keeps Alchemy 80 +
+// crafting 100; Wizard is magic-skills-only.
+inline constexpr PlayStylePack kWizard{
+	"Wizard",
+	"Wizard",
+	{.quest = 90, .discovery = 70, .clear = 20, .combat = 10, .reading = 100, .crafting = 20, .skillup = 100},
+	{
+		.objectives = 90,
+		.none = 80,
+		.main = 60,
+		.college = 100,
+		.thieves = 20,
+		.brotherhood = 10,
+		.companions = 15,
+		.misc = 40,
+		.daedric = 100,
+		.side = 70,
+		.civilWar = 15,
+		.dawnguard = 40,
+		.dragonborn = 70,
+	},
+	{
+		Bias(70,
+			PlaceKind::City, 80,
+			PlaceKind::Town, 70,
+			PlaceKind::DwemerRuin, 90,
+			PlaceKind::TelvanniTower, 100,
+			PlaceKind::MiraakTemple, 80,
+			PlaceKind::Fort, 20,
+			PlaceKind::MilitaryCamp, 15),
+		Bias(20,
+			PlaceKind::Fort, 15,
+			PlaceKind::MilitaryCamp, 10,
+			PlaceKind::Camp, 15,
+			PlaceKind::City, 0,
+			PlaceKind::Town, 0),
+	},
+	{.undead = 0, .stealth = 0, .beast = 0, .skipMisc = false, .mainQuestMultiplier = 0.9f},
+	BiasSkills(0,
+		SkillKind::Alteration, 100,
+		SkillKind::Conjuration, 100,
+		SkillKind::Destruction, 100,
+		SkillKind::Illusion, 100,
+		SkillKind::Restoration, 100,
+		SkillKind::Enchanting, 100),
+};
+
+inline constexpr std::array<PlayStylePack, 20> kPresets = {{
 	kAdventurer,
 	kVigilant,
 	kSummoner,
@@ -960,6 +1008,7 @@ inline constexpr std::array<PlayStylePack, 19> kPresets = {{
 	kElementalist,
 	kBattlemage,
 	kCrafter,
+	kWizard,
 }};
 
 static_assert(CategoriesCapped(kAdventurer.categories));
@@ -987,6 +1036,25 @@ static_assert(kCrafter.skills[SkillKind::Smithing] == 100.f);
 static_assert(kCrafter.skills[SkillKind::Alchemy] == 100.f);
 static_assert(kCrafter.skills[SkillKind::Enchanting] == 100.f);
 static_assert(kCrafter.skills[SkillKind::OneHanded] == 0.f);
+static_assert(CategoriesCapped(kWizard.categories));
+static_assert(kWizard.categories.reading == 100.f);
+static_assert(kWizard.categories.skillup == 100.f);
+static_assert(kWizard.categories.quest == 90.f);
+static_assert(kWizard.categories.combat == 10.f);
+static_assert(kWizard.categories.crafting == 20.f);
+static_assert(kWizard.categories.clear == 20.f);
+static_assert(kWizard.skills[SkillKind::Alteration] == 100.f);
+static_assert(kWizard.skills[SkillKind::Conjuration] == 100.f);
+static_assert(kWizard.skills[SkillKind::Destruction] == 100.f);
+static_assert(kWizard.skills[SkillKind::Illusion] == 100.f);
+static_assert(kWizard.skills[SkillKind::Restoration] == 100.f);
+static_assert(kWizard.skills[SkillKind::Enchanting] == 100.f);
+static_assert(kWizard.skills[SkillKind::Alchemy] == 0.f);
+static_assert(kWizard.skills[SkillKind::Speech] == 0.f);
+static_assert(kWizard.skills[SkillKind::Smithing] == 0.f);
+static_assert(kWizard.skills[SkillKind::OneHanded] == 0.f);
+static_assert(kMage.skills[SkillKind::Alchemy] == 80.f);
+static_assert(kMage.categories.crafting == 100.f);
 static_assert(kIllusionist.skills[SkillKind::Illusion] == 100.f);
 static_assert(kIllusionist.skills[SkillKind::Alteration] == 0.f);
 static_assert(kIllusionist.skills[SkillKind::Conjuration] == 0.f);
