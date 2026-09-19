@@ -54,13 +54,19 @@ int main()
 	cfg.SetCategoryWeight(Category::Combat, 100.f);
 	cfg.SetCategoryWeight(Category::Quest, 100.f);
 
-	// Discovery, clears, crafting keep global. Quest/Reading/Combat/SkillUp do not.
+	// Discovery/Clear ignore global (Jo: iCave≈30 at 2% used to be 0.6, no toast).
+	// Crafting still uses global. Quest/Reading/Combat/SkillUp already ignore it.
 	const float withGlobal = 100.f * 1.f * (2.f / 100.f);
 	assert(Near(Awards::Scale(100.f, Category::Quest), 100.f));
-	assert(Near(Awards::Scale(100.f, Category::Discovery), withGlobal));
-	assert(Near(Awards::Scale(100.f, Category::Clear), withGlobal));
+	assert(Near(Awards::Scale(100.f, Category::Discovery), 100.f));
+	assert(Near(Awards::Scale(100.f, Category::Clear), 100.f));
+	assert(Near(Awards::Scale(30.f, Category::Discovery), 30.f));
+	assert(static_cast<int>(std::lround(static_cast<double>(Awards::Scale(30.f, Category::Discovery)))) >= 1);
 	assert(Near(Awards::Scale(100.f, Category::SkillUp), 100.f));
 	assert(Near(Awards::Scale(100.f, Category::Crafting), withGlobal));
+	cfg.SetCategoryWeight(Category::Discovery, 50.f);
+	assert(Near(Awards::Scale(30.f, Category::Discovery), 15.f));
+	cfg.SetCategoryWeight(Category::Discovery, 100.f);
 	// Jo skill path: SkillUpBaseXP * (skillWeight/100) then Scale(SkillUp) — global must not apply.
 	assert(Near(Awards::SkillUpBaseXP(4.f, 10, 10.f), 4.f));
 	assert(Near(Awards::SkillUpBaseXP(4.f, 29, 10.f), 11.6f));
@@ -79,11 +85,13 @@ int main()
 	assert(Near(Awards::Scale(Awards::SkillUpBaseXP(cfg.skillUpXP, 10, cfg.skillUpLevelScale), Category::SkillUp), 2.f));
 	cfg.SetCategoryWeight(Category::SkillUp, 100.f);
 
-	// Global 100% still multiplies those categories; Quest stays weight-only.
+	// Global 100% still does not multiply ignore-global categories.
 	cfg.globalXPPercent = 100.f;
 	assert(Near(Awards::Scale(100.f, Category::Quest), 100.f));
 	assert(Near(Awards::Scale(5.f, Category::Reading), 5.f));
 	assert(Near(Awards::Scale(10.f, Category::Combat), 10.f));
+	assert(Near(Awards::Scale(30.f, Category::Discovery), 30.f));
+	assert(Near(Awards::Scale(30.f, Category::Clear), 30.f));
 
 	// Enable flags still gate Reading/Combat.
 	cfg.globalXPPercent = 2.f;
@@ -145,5 +153,6 @@ int main()
 	std::cout << "host_awards: SkillUpBaseXP linear in skill level (scale 10)\n";
 	std::cout << "host_awards: Give skips toast when lround(amount) < 1\n";
 	std::cout << "host_awards: SetState(24) keeps +100 XP in-bar (no fake level-1 pool)\n";
+	std::cout << "host_awards: Discovery/Clear ignore global (cave 30 at 2% stays 30)\n";
 	return 0;
 }

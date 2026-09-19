@@ -175,13 +175,15 @@ float Scale(float base, Category category)
 		return 0.f;
 	}
 	const float cat = cfg.CategoryWeight(category) / 100.f;
-	// Quest (stage + complete), Reading, Combat, and Skill-ups ignore
-	// fGlobalXPPercent. Jo runs global at ~2% so discovery/clears stay slow;
-	// skill training uses only fSkillUpWeight + per-skill [Skills] weights
-	// (and fSkillUpXP). Give() still accumulates fractional awards, but skips
-	// the toast when lround(amount) < 1 so "+0 XP" never appears.
+	// Quest, Reading, Combat, Skill-ups, Discovery, and Clear ignore
+	// fGlobalXPPercent. Jo runs global at ~2%; a cave at iCave≈30 used to
+	// become 0.6 XP (toast suppressed). Pace discovery/clears with
+	// fDiscoveryWeight / fClearWeight / per-place sliders instead.
+	// Crafting still uses global. Give() still skips the toast when
+	// lround(amount) < 1 so "+0 XP" never appears.
 	if (category == Category::Quest || category == Category::Reading
-		|| category == Category::Combat || category == Category::SkillUp) {
+		|| category == Category::Combat || category == Category::SkillUp
+		|| category == Category::Discovery || category == Category::Clear) {
 		return base * cat;
 	}
 	const float global = cfg.globalXPPercent / 100.f;

@@ -2,7 +2,7 @@
 
 A **brand-new**, clean-room SKSE plugin for *The Elder Scrolls V: Skyrim Special Edition* (Anniversary Edition **1.7.104.0**). It awards **player level XP** for finishing quests, discovering locations, and clearing dungeons — adventure-first progression rather than grinding a skill.
 
-**Version 4.2.8** adds the **Wizard** playstyle pack (six magic schools 100, Alchemy/Speech/combat skills 0; Mage is unchanged) and fixes the stuck vanilla XP bar. Awards now sync `g_level` / `g_pool` from the live player on load and write XP into `PlayerSkills::Data::xp` so the HUD meter Jo watches moves; the ESL `AdventureXP_Percent` global is still updated for other HUDs. 4.2.7 Crafter and the 4.2.6 skill-up crash hotfix stay in. Skill-up level is still read from `SkillIncrease::Event::player` plus `GetPlayerRuntimeData().skills` (or versioned `AsActorValueOwner`). Do **not** call `PlayerCharacter::GetBaseActorValue` — that virtual AVO call crashed 1.7.104 (`call [rax+0x18]`). If the AV read fails, the award falls back to flat `fSkillUpXP` (no crash). Linear scale is unchanged: `fSkillUpXP * max(1, skillLevel) / max(1, fSkillUpLevelScale)` (default 10), then category/per-skill weights; SkillUp ignores global. Quest/Reading/Combat still ignore global. Toast suppress when `lround(amount) < 1`. Discovery, clears, and crafting still use global. It is not a continuation of anyone else’s 3.x package.
+**Version 4.2.9** makes Discovery and Clear ignore `fGlobalXPPercent` (same as Quest/Reading/Combat/SkillUp). Jo’s live INI at 2% turned `iCave≈30` into 0.6 XP (no toast). Pace those with `fDiscoveryWeight` / `fClearWeight` / per-place sliders. Crafting still uses global. Toast suppress for `lround(amount) < 1` stays. 4.2.8 Wizard + vanilla XP-bar sync, 4.2.7 Crafter, and the 4.2.6 skill-up crash hotfix stay in. Skill-up level is still read from `SkillIncrease::Event::player` plus `GetPlayerRuntimeData().skills` (or versioned `AsActorValueOwner`). Do **not** call `PlayerCharacter::GetBaseActorValue` — that virtual AVO call crashed 1.7.104 (`call [rax+0x18]`). If the AV read fails, the award falls back to flat `fSkillUpXP` (no crash). Linear scale is unchanged: `fSkillUpXP * max(1, skillLevel) / max(1, fSkillUpLevelScale)` (default 10), then category/per-skill weights. It is not a continuation of anyone else’s 3.x package.
 
 Similar Skyrim mods exist. **Every line of code and every asset in this archive is newly written.** Nothing here is copied, forked, or derived from other XP plugins or their source. Credit is not permission. See `CLEANROOM.md`.
 
@@ -10,7 +10,7 @@ Similar Skyrim mods exist. **Every line of code and every asset in this archive 
 
 1. Awards player XP into an adventure pool (quests, discovery, clears, optional combat / reading / crafting / skill-ups).
 2. Play-style presets write category sliders, quest/place amounts, and per-skill weights.
-3. Global XP percent plus per-quest and per-place **absolute XP** (0–200). Per-skill weights are 0–100%. Quest, Reading, Combat, and Skill-up ignore global XP percent and use category weight only. Reading base XP is `floor(sqrt(goldValue) * fReadingMult)` (default mult 1.0). Quest stages stay enabled. Skill-up XP is `fSkillUpXP * max(1, skillLevel) / max(1, fSkillUpLevelScale)` then `* (per-skill/100) * (fSkillUpWeight/100)` (default scale 10).
+3. Global XP percent plus per-quest and per-place **absolute XP** (0–200). Per-skill weights are 0–100%. Quest, Reading, Combat, Skill-up, Discovery, and Clear ignore global XP percent and use category weight only. Crafting still uses global. Reading base XP is `floor(sqrt(goldValue) * fReadingMult)` (default mult 1.0). Quest stages stay enabled. Skill-up XP is `fSkillUpXP * max(1, skillLevel) / max(1, fSkillUpLevelScale)` then `* (per-skill/100) * (fSkillUpWeight/100)` (default scale 10).
 4. On-screen XP toast via `DebugNotification` (no third-party HUD SWF).
 5. `AdventureXP_Percent` global in `AdventureXP.esl` for other HUDs.
 6. **SkyUI MCM named AdventureXP** — enable/disable, pick a pack, edit every category. Calls only `AdventureXP.*` natives.
@@ -25,7 +25,7 @@ Similar Skyrim mods exist. **Every line of code and every asset in this archive 
 
 ## Install (Vortex / MO2)
 
-Packed zip name: **`AdventureXP-4.2.8.zip`**. Data-root layout:
+Packed zip name: **`AdventureXP-4.2.9.zip`**. Data-root layout:
 
 ```
 Data/AdventureXP.esl
@@ -156,8 +156,8 @@ python3 scripts/pack.py --allow-missing-dll --source
 
 Writes:
 
-- `dist/packed/AdventureXP-4.2.8.zip` — Vortex Data-root layout (DLL included when present)
-- `dist/packed/AdventureXP-4.2.8-SOURCE.zip` — this tree
+- `dist/packed/AdventureXP-4.2.9.zip` — Vortex Data-root layout (DLL included when present)
+- `dist/packed/AdventureXP-4.2.9-SOURCE.zip` — this tree
 
 ## Host tests
 
