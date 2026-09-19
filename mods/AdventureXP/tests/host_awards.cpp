@@ -34,30 +34,35 @@ int main()
 	auto& cfg = Config::Get();
 
 	// Jo: fGlobalXPPercent=2, reading at 100%. Old Scale: 5 * 1.0 * 0.02 = 0.1
-	// (toast would print +0). Reading/Combat must ignore global.
+	// (toast would print +0). Quest/Reading/Combat must ignore global.
 	assert(Near(Awards::Scale(5.f, Category::Reading), 5.f));
 	assert(Near(Awards::Scale(cfg.readingXP, Category::Reading), 5.f));
 	assert(Near(Awards::Scale(10.f, Category::Combat), 10.f));
 	assert(Near(Awards::Scale(cfg.killXP, Category::Combat), 2.f));
 	assert(Near(Awards::Scale(cfg.bossKillXP, Category::Combat), 25.f));
+	assert(Near(Awards::Scale(12.f, Category::Quest), 12.f));
+	assert(Near(Awards::Scale(80.f, Category::Quest), 80.f));
 
-	// Category weight still scales Reading and Combat.
+	// Category weight still scales Quest, Reading, and Combat.
 	cfg.SetCategoryWeight(Category::Reading, 50.f);
 	cfg.SetCategoryWeight(Category::Combat, 40.f);
+	cfg.SetCategoryWeight(Category::Quest, 50.f);
 	assert(Near(Awards::Scale(5.f, Category::Reading), 2.5f));
 	assert(Near(Awards::Scale(10.f, Category::Combat), 4.f));
+	assert(Near(Awards::Scale(12.f, Category::Quest), 6.f));
 	cfg.SetCategoryWeight(Category::Reading, 100.f);
 	cfg.SetCategoryWeight(Category::Combat, 100.f);
+	cfg.SetCategoryWeight(Category::Quest, 100.f);
 
-	// Quests, discovery, clears, skill-ups, crafting keep global.
+	// Discovery, clears, skill-ups, crafting keep global. Quest does not.
 	const float withGlobal = 100.f * 1.f * (2.f / 100.f);
-	assert(Near(Awards::Scale(100.f, Category::Quest), withGlobal));
+	assert(Near(Awards::Scale(100.f, Category::Quest), 100.f));
 	assert(Near(Awards::Scale(100.f, Category::Discovery), withGlobal));
 	assert(Near(Awards::Scale(100.f, Category::Clear), withGlobal));
 	assert(Near(Awards::Scale(100.f, Category::SkillUp), withGlobal));
 	assert(Near(Awards::Scale(100.f, Category::Crafting), withGlobal));
 
-	// Global 100% still multiplies those categories.
+	// Global 100% still multiplies those categories; Quest stays weight-only.
 	cfg.globalXPPercent = 100.f;
 	assert(Near(Awards::Scale(100.f, Category::Quest), 100.f));
 	assert(Near(Awards::Scale(5.f, Category::Reading), 5.f));
@@ -103,7 +108,7 @@ int main()
 	Awards::Give(12.f * 0.02f, "quest objective");
 	Awards::Give(0.24f, "kill");
 
-	std::cout << "host_awards: Scale ignores global for Reading and Combat only\n";
+	std::cout << "host_awards: Scale ignores global for Quest, Reading, and Combat\n";
 	std::cout << "host_awards: ReadingBaseXP sqrt(gold)*fReadingMult\n";
 	std::cout << "host_awards: Give skips toast when lround(amount) < 1\n";
 	return 0;

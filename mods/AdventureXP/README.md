@@ -2,7 +2,7 @@
 
 A **brand-new**, clean-room SKSE plugin for *The Elder Scrolls V: Skyrim Special Edition* (Anniversary Edition **1.7.104.0**). It awards **player level XP** for finishing quests, discovering locations, and clearing dungeons — adventure-first progression rather than grinding a skill.
 
-**Version 4.2.3** keeps the 4.2.1 Reading/Combat ignore-global rule and the 4.2.2 reading formula `floor(sqrt(bookGold) * fReadingMult)`. `Awards::Give` still adds fractional XP to the pool, but suppresses the on-screen toast when `lround(amount) < 1` so `fGlobalXPPercent=2` no longer shows `+0 XP (quest objective)` / `+0 XP (kill)`. Visible toasts print the rounded integer with `%d`. Notes/letters with gold 0 stay 0. Flat `fReadingXP` remains in the INI as an unused legacy key. Quests, discovery, clears, skill-ups, and other categories still multiply by global. It is not a continuation of anyone else’s 3.x package.
+**Version 4.2.3** keeps the 4.2.1 Reading/Combat ignore-global rule and the 4.2.2 reading formula `floor(sqrt(bookGold) * fReadingMult)`. Quest stage and quest complete also ignore global (`base * categoryWeight/100`) so `iObjectives=12` at `fGlobalXPPercent=2` awards visible `+12 XP`, not `+0`. `bAwardQuestStages` stays on. `Awards::Give` still adds fractional XP to the pool, but suppresses the on-screen toast when `lround(amount) < 1`. Visible toasts print the rounded integer with `%d`. Notes/letters with gold 0 stay 0. Flat `fReadingXP` remains in the INI as an unused legacy key. Discovery, clears, skill-ups, and crafting still multiply by global. It is not a continuation of anyone else’s 3.x package.
 
 Similar Skyrim mods exist. **Every line of code and every asset in this archive is newly written.** Nothing here is copied, forked, or derived from other XP plugins or their source. Credit is not permission. See `CLEANROOM.md`.
 
@@ -10,7 +10,7 @@ Similar Skyrim mods exist. **Every line of code and every asset in this archive 
 
 1. Awards player XP into an adventure pool (quests, discovery, clears, optional combat / reading / crafting / skill-ups).
 2. Play-style presets write category sliders, quest/place amounts, and per-skill weights.
-3. Global XP percent plus per-quest and per-place **absolute XP** (0–200). Per-skill weights are 0–100%. Reading and Combat ignore global XP percent and use category weight only. Reading base XP is `floor(sqrt(goldValue) * fReadingMult)` (default mult 1.0).
+3. Global XP percent plus per-quest and per-place **absolute XP** (0–200). Per-skill weights are 0–100%. Quest, Reading, and Combat ignore global XP percent and use category weight only. Reading base XP is `floor(sqrt(goldValue) * fReadingMult)` (default mult 1.0). Quest stages stay enabled.
 4. On-screen XP toast via `DebugNotification` (no third-party HUD SWF).
 5. `AdventureXP_Percent` global in `AdventureXP.esl` for other HUDs.
 6. **SkyUI MCM named AdventureXP** — enable/disable, pick a pack, edit every category. Calls only `AdventureXP.*` natives.

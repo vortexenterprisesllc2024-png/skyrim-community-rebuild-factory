@@ -92,11 +92,11 @@ float Scale(float base, Category category)
 		return 0.f;
 	}
 	const float cat = cfg.CategoryWeight(category) / 100.f;
-	// Reading and Combat ignore fGlobalXPPercent. Jo runs global at 2% so
-	// quests/discovery stay slow; category weight still applies. Give()
-	// still accumulates fractional awards, but skips the toast when
-	// lround(amount) < 1 so "+0 XP" never appears.
-	if (category == Category::Reading || category == Category::Combat) {
+	// Quest (stage + complete), Reading, and Combat ignore fGlobalXPPercent.
+	// Jo runs global at 2% so discovery/clears stay slow; category weight
+	// still applies. Give() still accumulates fractional awards, but skips
+	// the toast when lround(amount) < 1 so "+0 XP" never appears.
+	if (category == Category::Quest || category == Category::Reading || category == Category::Combat) {
 		return base * cat;
 	}
 	const float global = cfg.globalXPPercent / 100.f;
