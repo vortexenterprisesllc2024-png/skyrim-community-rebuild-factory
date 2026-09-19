@@ -54,13 +54,19 @@ int main()
 	cfg.SetCategoryWeight(Category::Combat, 100.f);
 	cfg.SetCategoryWeight(Category::Quest, 100.f);
 
-	// Discovery, clears, skill-ups, crafting keep global. Quest does not.
+	// Discovery, clears, crafting keep global. Quest/Reading/Combat/SkillUp do not.
 	const float withGlobal = 100.f * 1.f * (2.f / 100.f);
 	assert(Near(Awards::Scale(100.f, Category::Quest), 100.f));
 	assert(Near(Awards::Scale(100.f, Category::Discovery), withGlobal));
 	assert(Near(Awards::Scale(100.f, Category::Clear), withGlobal));
-	assert(Near(Awards::Scale(100.f, Category::SkillUp), withGlobal));
+	assert(Near(Awards::Scale(100.f, Category::SkillUp), 100.f));
 	assert(Near(Awards::Scale(100.f, Category::Crafting), withGlobal));
+	// Jo skill path: skillUpXP * (skillWeight/100) then Scale(SkillUp) — global must not apply.
+	assert(Near(Awards::Scale(cfg.skillUpXP * 1.f, Category::SkillUp), 4.f));
+	assert(Near(Awards::Scale(cfg.skillUpXP * 0.2f, Category::SkillUp), 0.8f));
+	cfg.SetCategoryWeight(Category::SkillUp, 50.f);
+	assert(Near(Awards::Scale(cfg.skillUpXP, Category::SkillUp), 2.f));
+	cfg.SetCategoryWeight(Category::SkillUp, 100.f);
 
 	// Global 100% still multiplies those categories; Quest stays weight-only.
 	cfg.globalXPPercent = 100.f;
@@ -108,7 +114,7 @@ int main()
 	Awards::Give(12.f * 0.02f, "quest objective");
 	Awards::Give(0.24f, "kill");
 
-	std::cout << "host_awards: Scale ignores global for Quest, Reading, and Combat\n";
+	std::cout << "host_awards: Scale ignores global for Quest, Reading, Combat, and SkillUp\n";
 	std::cout << "host_awards: ReadingBaseXP sqrt(gold)*fReadingMult\n";
 	std::cout << "host_awards: Give skips toast when lround(amount) < 1\n";
 	return 0;
