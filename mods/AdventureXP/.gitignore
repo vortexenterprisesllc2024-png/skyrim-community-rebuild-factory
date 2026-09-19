@@ -1,50 +1,13 @@
-# Build
 /build/
-/out/
-/dist/packed/
-CMakeUserPresets.json
-CMakeCache.txt
-CMakeFiles/
-cmake-build-*/
-compile_commands.json
-
-# vcpkg / FetchContent
-/vcpkg_installed/
-/extern/
-/_deps/
-
-# IDE
-/.vs/
-/.idea/
-/.vscode/
-*.user
-*.suo
-*.sdf
-*.opensdf
-*.VC.db
-*.VC.opendb
-
-# Objects and logs
-*.obj
-*.o
-*.pdb
-*.ilk
-*.exp
-*.lib
-*.dll
-*.log
-*.tlog
-
-# Python
+/dist/_staging/
+/tools/
+/agent-tools/
+/terminals/
 __pycache__/
 *.pyc
-.venv/
-
-# OS
+*.dll
+*.pdb
+*.obj
+*.lib
+*.exp
 .DS_Store
-Thumbs.db
-
-# Local agent noise
-/agent-tools/
-/uploads/
-/terminals/

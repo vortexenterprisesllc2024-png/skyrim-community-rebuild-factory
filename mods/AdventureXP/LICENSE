@@ -19,9 +19,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
-------------------------------------------------------------------------------
-Note on binaries: AdventureXP.dll is linked against CommonLibSSE-NG
-(GPL-3.0-or-later). Original AdventureXP sources in this repository are MIT.
-A distributed plugin binary that includes CommonLibSSE-NG is subject to
-GPL-3.0-or-later. See README.md.

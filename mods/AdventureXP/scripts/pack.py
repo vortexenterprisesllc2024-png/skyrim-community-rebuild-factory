@@ -1,11 +1,16 @@
 #!/usr/bin/env python3
-"""Assemble Vortex layout zip and/or full source zip for AdventureXP 4.0.0.
+"""Assemble Vortex layout zip and/or full source zip for AdventureXP 4.2.0.
 
 Layout zip (Data root):
 
     AdventureXP.esl
+    AdventureXP.seq
     SKSE/Plugins/AdventureXP.dll   (omitted with --allow-missing-dll)
     SKSE/Plugins/AdventureXP.ini
+    Scripts/Source/AdventureXP.psc
+    Scripts/Source/AdventureXPMCM.psc
+    Scripts/AdventureXP.pex        (if compiled)
+    Scripts/AdventureXPMCM.pex     (if compiled)
 """
 
 from __future__ import annotations
@@ -35,26 +40,41 @@ SOURCE_SKIP_DIRS = {
     ".idea",
     ".vs",
     ".vscode",
+    "tools",
 }
 SOURCE_SKIP_FILES = {
     ".ds_store",
     "thumbs.db",
 }
 
+PAPYRUS_SCRIPTS = (
+    "AdventureXP.psc",
+    "AdventureXPMCM.psc",
+)
+
 
 def read_version() -> str:
+    version_file = ROOT / "VERSION"
+    if version_file.is_file():
+        text = version_file.read_text(encoding="utf-8").strip()
+        if text:
+            return text
     header = ROOT / "include" / "AdventureXP" / "Version.h"
-    for line in header.read_text(encoding="utf-8").splitlines():
-        if "ADVENTUREXP_VERSION_STRING" in line and '"' in line:
-            return line.split('"')[1]
-    return "4.0.0"
+    if header.is_file():
+        for line in header.read_text(encoding="utf-8").splitlines():
+            if "ADVENTUREXP_VERSION_STRING" in line and '"' in line:
+                return line.split('"')[1]
+    return "4.2.0"
 
 
 VERSION = read_version()
 DEFAULT_INI = ROOT / "dist" / "SKSE" / "Plugins" / "AdventureXP.ini"
 DEFAULT_ESL = ROOT / "dist" / "AdventureXP.esl"
+DEFAULT_SEQ = ROOT / "dist" / "AdventureXP.seq"
 DEFAULT_LAYOUT = ROOT / "dist" / "packed" / f"AdventureXP-{VERSION}.zip"
 DEFAULT_SOURCE = ROOT / "dist" / "packed" / f"AdventureXP-{VERSION}-SOURCE.zip"
+PAPYRUS_DIR = ROOT / "papyrus"
+PEX_DIR = ROOT / "dist" / "Scripts"
 
 
 def find_dll(explicit: Path | None) -> Path | None:
@@ -90,6 +110,7 @@ def pack_layout(
     dll: Path | None,
     ini: Path,
     esl: Path,
+    seq: Path,
     output: Path,
     allow_missing_dll: bool,
     publish_artifacts: bool,
@@ -100,6 +121,13 @@ def pack_layout(
     if not esl.is_file():
         print(f"error: ESL not found: {esl} (run scripts/generate_esl.py)", file=sys.stderr)
         return 2
+    if not seq.is_file():
+        print(f"error: SEQ not found: {seq} (run scripts/generate_esl.py)", file=sys.stderr)
+        return 2
+    for name in PAPYRUS_SCRIPTS:
+        if not (PAPYRUS_DIR / name).is_file():
+            print(f"error: Papyrus source missing: {PAPYRUS_DIR / name}", file=sys.stderr)
+            return 2
     if dll is None:
         if not allow_missing_dll:
             print(
@@ -115,8 +143,17 @@ def pack_layout(
         shutil.rmtree(staging)
     plugins = staging / "SKSE" / "Plugins"
     plugins.mkdir(parents=True)
+    source_dir = staging / "Scripts" / "Source"
+    source_dir.mkdir(parents=True)
     shutil.copy2(ini, plugins / "AdventureXP.ini")
     shutil.copy2(esl, staging / "AdventureXP.esl")
+    shutil.copy2(seq, staging / "AdventureXP.seq")
+    for name in PAPYRUS_SCRIPTS:
+        shutil.copy2(PAPYRUS_DIR / name, source_dir / name)
+    if PEX_DIR.is_dir():
+        pex_out = staging / "Scripts"
+        for pex in sorted(PEX_DIR.glob("*.pex")):
+            shutil.copy2(pex, pex_out / pex.name)
     if dll:
         shutil.copy2(dll, plugins / "AdventureXP.dll")
 
@@ -171,6 +208,7 @@ def main() -> int:
     parser.add_argument("--dll", type=Path, default=None)
     parser.add_argument("--ini", type=Path, default=DEFAULT_INI)
     parser.add_argument("--esl", type=Path, default=DEFAULT_ESL)
+    parser.add_argument("--seq", type=Path, default=DEFAULT_SEQ)
     parser.add_argument("-o", "--output", type=Path, default=DEFAULT_LAYOUT)
     parser.add_argument(
         "--allow-missing-dll",
@@ -202,6 +240,7 @@ def main() -> int:
             find_dll(args.dll),
             args.ini,
             args.esl,
+            args.seq,
             args.output,
             args.allow_missing_dll,
             publish,

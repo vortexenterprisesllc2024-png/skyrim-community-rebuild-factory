@@ -1,10 +1,7 @@
 #include "AdventureXP/PCH.h"
 #include "AdventureXP/Config.h"
 #include "AdventureXP/Events.h"
-#include "AdventureXP/PlayerXp.h"
-#include "AdventureXP/Globals.h"
 #include "AdventureXP/Papyrus.h"
-#include "AdventureXP/Serialization.h"
 #include "AdventureXP/SettingsHook.h"
 #include "AdventureXP/Version.h"
 
@@ -13,8 +10,9 @@
 namespace
 {
     // True only after SKSEPluginLoad confirmed AE 1.7.104.x. Event sinks,
-    // Papyrus, and REL lookups stay behind this gate so a foreign runtime
-    // cannot trip CommonLib's MessageBox+Terminate during splash.
+    // Papyrus, INI load that can touch REL, and Address Library lookups stay
+    // behind this gate so a foreign runtime cannot trip CommonLib's
+    // MessageBox+Terminate during splash.
     bool g_runtimeSupported{ false };
 
     std::filesystem::path DocumentsSkseFolder()
@@ -79,6 +77,17 @@ namespace
         return runtime.major() == 1 && runtime.minor() == 7 && runtime.patch() == 104;
     }
 
+    void LoadIni()
+    {
+        auto ini = DllFolder() / "AdventureXP.ini";
+        std::error_code ec;
+        if (ini.empty() || !std::filesystem::exists(ini, ec)) {
+            ini = std::filesystem::current_path() / "Data" / "SKSE" / "Plugins" / "AdventureXP.ini";
+        }
+        AdventureXP::Config::Get().Load(ini);
+        logger::info("Loaded INI from {} (preset {})", ini.string(), AdventureXP::Config::Get().preset);
+    }
+
     void OnMessage(SKSE::MessagingInterface::Message* message)
     {
         if (!message || !g_runtimeSupported) {
@@ -91,10 +100,9 @@ namespace
             // and after AdventureXP.log exists. CommonLib v8 Relocation
             // constructors resolve IDs eagerly (IDDB + possible
             // report_and_fail MessageBox behind the Bethesda swirl).
-            AdventureXP::Config::Get().Load();
-            AdventureXP::BindGlobals();
+            LoadIni();
             AdventureXP::ApplySkillLevelingSetting();
-            AdventureXP::RegisterEventSinks();
+            AdventureXP::Events::Register();
             if (const auto* papyrus = SKSE::GetPapyrusInterface()) {
                 papyrus->Register(AdventureXP::Papyrus::Register);
             } else {
@@ -103,14 +111,7 @@ namespace
             logger::info(
                 "AdventureXP {} ready (AE 1.7.104 / Address Library format 5, preset {})",
                 ADVENTUREXP_VERSION_STRING,
-                AdventureXP::Config::Get().presetId);
-            break;
-        case SKSE::MessagingInterface::kNewGame:
-            AdventureXP::RevertState();
-            AdventureXP::OnSaveLoaded();
-            break;
-        case SKSE::MessagingInterface::kPostLoadGame:
-            AdventureXP::OnSaveLoaded();
+                AdventureXP::Config::Get().preset);
             break;
         default:
             break;
@@ -119,8 +120,6 @@ namespace
 
     void RegisterRuntimeFeatures()
     {
-        AdventureXP::RegisterSerialization();
-
         const auto* messaging = SKSE::GetMessagingInterface();
         if (!messaging || !messaging->RegisterListener(OnMessage)) {
             logger::error("Failed to register SKSE messaging listener — staying loaded as a no-op");

@@ -1,7 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
   "name": "adventurexp",
-  "version-string": "4.0.0",
+  "version-string": "4.2.0",
   "description": "Clean-room SKSE plugin: quest, exploration, and dungeon-clear player leveling for Skyrim AE 1.7.104.",
   "homepage": "https://github.com",
   "license": "MIT",

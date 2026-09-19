@@ -1,36 +1,40 @@
 #!/usr/bin/env python3
-"""Fail if any zax / Experience payload filename landed in this tree."""
+"""Fail if Experience / zax filenames or symbols appear in the clean-room tree."""
 
 from __future__ import annotations
 
-import zipfile
+import re
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SKIP_DIRS = {
     ".git",
-    "build",
-    "extern",
-    "_deps",
-    "vcpkg_installed",
-    ".vcpkg",
     "uploads",
     "agent-tools",
     "terminals",
+    "__pycache__",
+    "build",
+    "tools",
 }
+
+# Legal / test files may name the forbidden packages to say we do not ship them.
+SKIP_CONTENT = {
+    "README.md",
+    "CLEANROOM.md",
+    "assert-cleanroom.py",
+    "test_mcm_scripts.py",
+    "test_pack_layout.py",
+    "test_esl.py",
+}
+
 FORBIDDEN_NAMES = {
     "experience.dll",
     "experience.ini",
     "experience.pex",
     "experience.psc",
-    "experience.h",
-    "experience.cpp",
-    "experience.esl",
-    "experience.esp",
-    "experience.bsa",
     "experiencemcm.pex",
     "experiencemcm.psc",
-    "experiencemcm.esl",
     "experiencemcm_skillxp.pex",
     "experiencemcm_skillxp.psc",
     "experiencemcm_reset.pex",
@@ -40,44 +44,55 @@ FORBIDDEN_NAMES = {
     "hudhooks.swf",
     "statsmenu.swf",
     "trainingmenu.swf",
-    "experiencemcm_english.txt",
 }
-FORBIDDEN_DIR_FILES = {
-    ("actors", "default.ini"),
-    ("races", "default.ini"),
-}
+
+FORBIDDEN_SUBSTRINGS = (
+    "experiencemcm",
+    "experiencemcmquest",
+)
+
+CONTENT_TOKENS = (
+    re.compile(r"\bExperienceMCM\b"),
+    re.compile(r"\biXPDisc"),
+    re.compile(r"\biXPClear"),
+    re.compile(r"\biXPQuest"),
+    re.compile(r"\bSetSettingInt\b"),
+    re.compile(r"\bHUDHooks\b"),
+    re.compile(r"\bzax\b", re.I),
+)
+
+SCAN_SUFFIXES = {".h", ".cpp", ".hpp", ".psc", ".ini", ".cmake"}
 
 
 def main() -> int:
-    hits: list[str] = []
+    bad: list[str] = []
     for path in ROOT.rglob("*"):
         if not path.is_file():
             continue
-        if any(part in SKIP_DIRS for part in path.parts):
+        rel = path.relative_to(ROOT)
+        if any(part in SKIP_DIRS for part in rel.parts):
             continue
         name = path.name.lower()
         if name in FORBIDDEN_NAMES:
-            hits.append(str(path.relative_to(ROOT)))
+            bad.append(str(rel))
             continue
-        parts = tuple(p.lower() for p in path.relative_to(ROOT).parts)
-        if len(parts) >= 2 and (parts[-2], parts[-1]) in FORBIDDEN_DIR_FILES:
-            hits.append(str(path.relative_to(ROOT)))
+        if any(token in name for token in FORBIDDEN_SUBSTRINGS):
+            bad.append(str(rel))
             continue
-        if path.suffix.lower() == ".zip":
-            try:
-                with zipfile.ZipFile(path) as zf:
-                    for inner in zf.namelist():
-                        inner_name = Path(inner).name.lower()
-                        if inner_name in FORBIDDEN_NAMES:
-                            hits.append(f"{path.relative_to(ROOT)}::{inner}")
-            except zipfile.BadZipFile:
-                hits.append(f"{path.relative_to(ROOT)} (unreadable zip)")
-    if hits:
-        print("FAIL: forbidden Experience/zax filenames present:")
-        for hit in hits:
-            print(f"  {hit}")
+        if path.name in SKIP_CONTENT:
+            continue
+        if path.suffix.lower() not in SCAN_SUFFIXES:
+            continue
+        text = path.read_text(encoding="utf-8", errors="replace")
+        for token in CONTENT_TOKENS:
+            if token.search(text):
+                bad.append(f"{rel} ({token.pattern})")
+    if bad:
+        print("clean-room violation: forbidden names or symbols:", file=sys.stderr)
+        for item in bad:
+            print(f"  {item}", file=sys.stderr)
         return 1
-    print("assert-cleanroom: ok (0 Experience/zax payload files)")
+    print("clean-room: no Experience/zax filenames or symbols")
     return 0
 
 

@@ -2,59 +2,78 @@
 
 #include "AdventureXP/Presets.h"
 #include "AdventureXP/Types.h"
-#include "AdventureXP/XpMath.h"
 
-#include <cstdint>
+#include <array>
+#include <filesystem>
 #include <string>
-#include <string_view>
 
-namespace AdventureXP
-{
-    struct Config
-    {
-        bool enabled{ true };
-        float globalXPPercent{ 100.0f };
-        bool showXPMessages{ true };
-        bool ignoreSkillLeveling{ true };
-        std::string presetId{ kDefaultPresetId };
+namespace AdventureXP {
 
-        bool awardQuestStages{ true };
-        bool awardQuestComplete{ true };
-        bool skipHiddenQuests{ true };
-        bool skipMiscQuests{ false };
-        float questStageXP{ 12.0f };
-        float questCompleteXP{ 80.0f };
-        float mainQuestMultiplier{ 1.5f };
+class Config {
+public:
+	static Config& Get();
 
-        float discoveryXP{ 30.0f };
-        float dungeonClearXP{ 100.0f };
+	void Load(const std::filesystem::path& path);
+	void Save() const;
 
-        float killXP{ 2.0f };
-        float bossKillXP{ 25.0f };
+	[[nodiscard]] const std::filesystem::path& Path() const { return path_; }
 
-        float readingXP{ 5.0f };
-        float craftingXP{ 8.0f };
-        float skillUpXP{ 4.0f };
+	bool enabled = true;
+	float globalXPPercent = 100.f;
+	bool showMessages = true;
+	bool ignoreSkillLeveling = true;
+	bool awardKilling = false;
+	bool awardReading = false;
+	std::string preset = "Adventurer";
 
-        CategoryWeights weights{};
-        PackFlavor flavor{};
-        QuestTypeWeights questTypes{};
-        PlaceTypeWeights placeTypes{};
+	std::array<float, 7> categoryWeight = kDefaultCategoryWeight;
 
-        Math::Curve curve{};
+	bool awardQuestStages = true;
+	bool awardQuestComplete = true;
+	bool skipHiddenQuests = true;
+	bool skipMiscQuests = false;
+	float mainQuestMultiplier = 1.0f;
 
-        static Config& Get();
-        bool Load();
-        bool ApplyPreset(std::string_view id);
+	std::array<int, 13> questXP = kDefaultQuestXP;
+	std::array<int, 39> discoveryXP = kDefaultDiscoveryXP;
+	std::array<int, 39> clearXP = kDefaultClearXP;
+	std::array<float, 18> skillWeight = kDefaultSkillWeight;
 
-        bool AwardDiscovery() const { return weights.discovery > 0.0f; }
-        bool AwardClears() const { return weights.clears > 0.0f; }
-        bool AwardKills() const { return weights.combat > 0.0f; }
-        bool AwardReading() const { return weights.reading > 0.0f; }
-        bool AwardCrafting() const { return weights.crafting > 0.0f; }
-        bool AwardSkillUps() const { return weights.skillups > 0.0f; }
+	float killXP = 2.f;
+	float bossKillXP = 25.f;
+	float readingXP = 5.f;
+	float craftingXP = 8.f;
+	float skillUpXP = 4.f;
 
-    private:
-        std::string path_;
-    };
-}
+	float undeadCombatBonus = 0.f;
+	float stealthCombatBonus = 0.f;
+	float beastCombatBonus = 0.f;
+
+	float xpBase = 200.f;
+	float xpPerLevel = 50.f;
+	float xpExponent = 1.f;
+	int maxLevel = 81;
+
+	[[nodiscard]] float CategoryWeight(Category category) const;
+	void SetCategoryWeight(Category category, float weight);
+
+	[[nodiscard]] int QuestXP(QuestKind kind) const;
+	void SetQuestXP(QuestKind kind, int amount);
+
+	[[nodiscard]] int DiscoveryXP(PlaceKind kind) const;
+	void SetDiscoveryXP(PlaceKind kind, int amount);
+
+	[[nodiscard]] int ClearXP(PlaceKind kind) const;
+	void SetClearXP(PlaceKind kind, int amount);
+
+	[[nodiscard]] float SkillWeight(SkillKind kind) const;
+	void SetSkillWeight(SkillKind kind, float weight);
+
+	void ApplyPack(const PlayStylePack& pack);
+	bool ApplyPreset(std::string_view id);
+
+private:
+	std::filesystem::path path_;
+};
+
+}  // namespace AdventureXP

@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.25)
 
 project(
     AdventureXP
-    VERSION 4.0.0
+    VERSION 4.2.0
     DESCRIPTION "Clean-room SKSE plugin: quest / explore / dungeon-clear player leveling"
     LANGUAGES CXX
 )
@@ -16,22 +16,25 @@ option(ADVENTUREXP_HOST_TESTS "Build host-side unit tests that do not need Skyri
 
 include(CTest)
 
-# Shared, engine-free math used by the plugin and by host tests.
-add_library(adventurexp_math INTERFACE)
-target_include_directories(adventurexp_math INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/include")
+# Shared, engine-free types used by the plugin and by host tests.
+add_library(AdventureXPTypes INTERFACE)
+target_include_directories(AdventureXPTypes INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/include")
 
 if(ADVENTUREXP_HOST_TESTS)
-    add_executable(adventurexp_math_tests tests/test_xp_math.cpp)
-    target_link_libraries(adventurexp_math_tests PRIVATE adventurexp_math)
-    add_test(NAME adventurexp_math_tests COMMAND adventurexp_math_tests)
+    add_executable(adventurexp_host_types tests/host_types.cpp)
+    target_link_libraries(adventurexp_host_types PRIVATE AdventureXPTypes)
+    target_compile_features(adventurexp_host_types PRIVATE cxx_std_20)
+    add_test(NAME adventurexp_host_types COMMAND adventurexp_host_types)
 
-    add_executable(adventurexp_preset_tests tests/test_presets.cpp)
-    target_link_libraries(adventurexp_preset_tests PRIVATE adventurexp_math)
-    add_test(NAME adventurexp_preset_tests COMMAND adventurexp_preset_tests)
+    add_executable(adventurexp_host_config tests/host_config.cpp src/Config.cpp src/Awards.cpp)
+    target_include_directories(adventurexp_host_config PRIVATE include)
+    target_compile_features(adventurexp_host_config PRIVATE cxx_std_20)
+    add_test(NAME adventurexp_host_config COMMAND adventurexp_host_config)
 
-    add_executable(adventurexp_type_tests tests/test_types.cpp)
-    target_link_libraries(adventurexp_type_tests PRIVATE adventurexp_math)
-    add_test(NAME adventurexp_type_tests COMMAND adventurexp_type_tests)
+    add_executable(adventurexp_host_presets tests/host_presets.cpp src/Config.cpp src/Awards.cpp)
+    target_include_directories(adventurexp_host_presets PRIVATE include)
+    target_compile_features(adventurexp_host_presets PRIVATE cxx_std_20)
+    add_test(NAME adventurexp_host_presets COMMAND adventurexp_host_presets)
 endif()
 
 if(NOT ADVENTUREXP_BUILD_PLUGIN)
@@ -52,6 +55,7 @@ set(BUILD_TESTS OFF CACHE BOOL "CommonLibSSE-NG tests" FORCE)
 # and is the SHA Get-CommonLib refuses to build without Format::SSEv5.
 # Do not take a vcpkg/config CommonLib (those pins are often pre-format-5).
 # Do not use a shallow v8.0.1 tag clone — pin the exact SSEv5 commit.
+# Taquitos local half-tree failed MSVC (fmt/PlayerSkills/SimpleIni/EnumSet).
 set(ADVENTUREXP_COMMONLIB_GIT https://github.com/alandtse/CommonLibVR.git)
 set(ADVENTUREXP_COMMONLIB_SHA d13d10a0ccb4945870eb841bf1ad8a6cf5ed84dd)
 
@@ -81,13 +85,10 @@ include(CommonLibSSE)
 set(ADVENTUREXP_SOURCES
     src/Plugin.cpp
     src/Config.cpp
-    src/PlayerXp.cpp
     src/Events.cpp
-    src/SettingsHook.cpp
-    src/Serialization.cpp
-    src/Messages.cpp
-    src/Globals.cpp
     src/Papyrus.cpp
+    src/Awards.cpp
+    src/SettingsHook.cpp
 )
 
 add_commonlibsse_plugin(
@@ -102,9 +103,10 @@ add_commonlibsse_plugin(
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include")
-target_link_libraries(${PROJECT_NAME} PRIVATE adventurexp_math)
+target_link_libraries(${PROJECT_NAME} PRIVATE AdventureXPTypes)
 target_precompile_headers(${PROJECT_NAME} PRIVATE include/AdventureXP/PCH.h)
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_23)
+target_compile_definitions(${PROJECT_NAME} PRIVATE ADVENTUREXP_WITH_GAME)
 
 # __AdventureXPPlugin.cpp (from add_commonlibsse_plugin) uses "sv" literals
 # and is not guaranteed to pick up the PCH on MSVC.

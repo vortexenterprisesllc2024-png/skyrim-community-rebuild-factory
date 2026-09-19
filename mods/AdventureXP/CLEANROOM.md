@@ -1,4 +1,4 @@
-# Clean-room rules (AdventureXP 4.0)
+# Clean-room rules (AdventureXP 4.2)
 
 Nexus removed the unofficial Experience AE page because zax’s Experience (17751) forbids upload, modification, and asset use. **Credit is not permission.**
 
@@ -16,10 +16,14 @@ Nexus removed the unofficial Experience AE page because zax’s Experience (1775
 
 ## What this repo ships instead
 
-- Newly written C++ (`AdventureXP.dll` target), INI, ESL, MIT `LICENSE`, and `AdventureXP.psc` natives.
+- Newly written SkyUI MCM (`AdventureXPMCM`), INI, ESL (progress global + MCM quest), MIT `LICENSE`, `AdventureXP.psc` natives, and C++ (`include/AdventureXP`, `src`).
 - Play-style packs and quest/place sliders designed here. Inspired by EverQuest-style leveling and other games; similar Skyrim mods exist.
 - No SWF HUD. Toasts use vanilla `DebugNotification`.
 
 ## Names
 
-`AdventureXP.dll`, `AdventureXP.esl`, `AdventureXP.ini`, editor ID `AdventureXP_Percent`. Never `ExperienceMCMQuest` / `ExperienceMCM`.
+`AdventureXP.dll`, `AdventureXP.esl`, `AdventureXP.ini`, editor IDs `AdventureXP_Percent` and `AdventureXPMCMQuest`, script `AdventureXPMCM`. Never `ExperienceMCMQuest` / `ExperienceMCM`.
+
+## MCM rule
+
+`AdventureXPMCM.psc` may call **only** `AdventureXP.*` natives from `papyrus/AdventureXP.psc`. It must not call Experience / zax natives or load Experience MCM scripts.

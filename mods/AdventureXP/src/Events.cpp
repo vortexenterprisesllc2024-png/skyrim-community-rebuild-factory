@@ -1,422 +1,323 @@
-#include "AdventureXP/PCH.h"
 #include "AdventureXP/Events.h"
+
+#include "AdventureXP/Awards.h"
 #include "AdventureXP/Config.h"
-#include "AdventureXP/PlayerXp.h"
-#include "AdventureXP/Serialization.h"
 #include "AdventureXP/Types.h"
-#include "AdventureXP/XpMath.h"
 
-namespace AdventureXP
+#include <optional>
+#include <string>
+#include <type_traits>
+#include <unordered_set>
+#include <vector>
+
+#ifdef ADVENTUREXP_WITH_GAME
+#	include <RE/Skyrim.h>
+#endif
+
+namespace AdventureXP::Events {
+namespace {
+
+#ifdef ADVENTUREXP_WITH_GAME
+
+template <class T>
+std::uint16_t MarkerEnumValue(const T& type)
 {
-    namespace
-    {
-        std::uint64_t PackQuestStage(RE::FormID formID, std::uint16_t stage)
-        {
-            return (static_cast<std::uint64_t>(formID) << 16) | stage;
-        }
-
-        bool IsPlayerRef(const RE::TESObjectREFR* refr)
-        {
-            const auto* player = RE::PlayerCharacter::GetSingleton();
-            return player && refr && refr->GetFormID() == player->GetFormID();
-        }
-
-        bool IsHiddenQuest(const RE::TESQuest* quest)
-        {
-            if (!quest) {
-                return true;
-            }
-            if (ClassifyQuestType(static_cast<std::uint32_t>(quest->GetType())) == QuestKind::Hidden) {
-                return true;
-            }
-            const auto* name = quest->GetName();
-            return !name || name[0] == '\0';
-        }
-
-        float QuestMultiplier(const RE::TESQuest* quest)
-        {
-            if (!quest) {
-                return 1.0f;
-            }
-            const auto& cfg = Config::Get();
-            const auto kind = ClassifyQuestType(static_cast<std::uint32_t>(quest->GetType()));
-            float mult = Math::ApplyGlobalPercent(1.0f, WeightFor(kind, cfg.questTypes));
-            if (kind == QuestKind::Main) {
-                mult *= cfg.mainQuestMultiplier;
-            }
-            return mult;
-        }
-
-        constexpr const char* kPlaceKeywords[] = {
-            "LocTypeDragonLair",
-            "LocTypeNordicRuin",
-            "LocTypeDraugrCrypt",
-            "LocTypeMilitaryFort",
-            "LocTypeBanditCamp",
-            "LocTypeForswornCamp",
-            "LocTypeCamp",
-            "LocTypeMine",
-            "LocTypeCave",
-            "LocTypeCity",
-            "LocTypeTown",
-            "LocTypeSettlement",
-            "LocTypeDungeon",
-            "LocTypeDwemerRuin",
-            "LocTypeDwarvenAutomatons",
-        };
-
-        PlaceKind ClassifyLocation(RE::BGSLocation* location)
-        {
-            auto kind = PlaceKind::Default;
-            if (!location) {
-                return kind;
-            }
-            for (const auto* edid : kPlaceKeywords) {
-                const auto* keyword = RE::TESForm::LookupByEditorID<RE::BGSKeyword>(edid);
-                if (keyword && location->HasKeyword(keyword)) {
-                    kind = Stronger(kind, ClassifyPlaceKeyword(edid));
-                }
-            }
-            return kind;
-        }
-
-        float PlaceMultiplier(RE::BGSLocation* location)
-        {
-            return Math::ApplyGlobalPercent(1.0f, WeightFor(ClassifyLocation(location), Config::Get().placeTypes));
-        }
-
-        std::string QuestLabel(const RE::TESQuest* quest)
-        {
-            if (!quest) {
-                return "quest";
-            }
-            if (const auto* name = quest->GetName(); name && name[0]) {
-                return name;
-            }
-            if (const auto* edid = quest->GetFormEditorID(); edid && edid[0]) {
-                return edid;
-            }
-            return "quest";
-        }
-
-        void ConsiderLocationClear(RE::BGSLocation* location)
-        {
-            const auto& cfg = Config::Get();
-            if (!cfg.AwardClears() || !location) {
-                return;
-            }
-            if (!location->IsCleared()) {
-                return;
-            }
-
-            const auto formID = location->GetFormID();
-            auto& awarded = State().awardedClears;
-            if (awarded.contains(formID)) {
-                return;
-            }
-            awarded.insert(formID);
-
-            std::string label = "dungeon";
-            if (const auto* name = location->GetName(); name && name[0]) {
-                label = name;
-            } else if (const auto* edid = location->GetFormEditorID(); edid && edid[0]) {
-                label = edid;
-            }
-            PlayerXp::Get().Award(
-                AwardSource::DungeonClear,
-                cfg.dungeonClearXP * PlaceMultiplier(location),
-                label + " cleared");
-        }
-
-        void CheckPlayerLocation()
-        {
-            auto* player = RE::PlayerCharacter::GetSingleton();
-            if (!player) {
-                return;
-            }
-            ConsiderLocationClear(player->GetCurrentLocation());
-        }
-
-        bool HasKeywordEDID(RE::TESForm* form, const char* edid)
-        {
-            auto* keyword = RE::TESForm::LookupByEditorID<RE::BGSKeyword>(edid);
-            if (!keyword || !form) {
-                return false;
-            }
-            if (auto* actor = form->As<RE::Actor>()) {
-                return actor->HasKeyword(keyword);
-            }
-            return false;
-        }
-
-        bool PlayerIsBeastForm(RE::PlayerCharacter* player)
-        {
-            if (!player) {
-                return false;
-            }
-            const auto* race = player->GetRace();
-            const auto* edid = race ? race->GetFormEditorID() : nullptr;
-            if (!edid || !edid[0]) {
-                return false;
-            }
-            const std::string_view id{ edid };
-            return id.find("Werewolf") != std::string_view::npos || id.find("VampireLord") != std::string_view::npos;
-        }
-
-        bool IsCraftingSkill(RE::ActorValue av)
-        {
-            return av == RE::ActorValue::kSmithing || av == RE::ActorValue::kAlchemy || av == RE::ActorValue::kEnchanting;
-        }
-
-        class Handler :
-            public RE::BSTEventSink<RE::TESQuestStageEvent>,
-            public RE::BSTEventSink<RE::TESCombatEvent>,
-            public RE::BSTEventSink<RE::TESDeathEvent>,
-            public RE::BSTEventSink<RE::TESActorLocationChangeEvent>,
-            public RE::BSTEventSink<RE::LocationDiscovery::Event>,
-            public RE::BSTEventSink<RE::BooksRead::Event>,
-            public RE::BSTEventSink<RE::SkillIncrease::Event>
-        {
-        public:
-            static Handler& Get()
-            {
-                static Handler instance;
-                return instance;
-            }
-
-            RE::BSEventNotifyControl ProcessEvent(const RE::TESQuestStageEvent* ev, RE::BSTEventSource<RE::TESQuestStageEvent>*) override
-            {
-                if (!ev) {
-                    return RE::BSEventNotifyControl::kContinue;
-                }
-
-                auto* quest = RE::TESForm::LookupByID<RE::TESQuest>(ev->formID);
-                if (!quest) {
-                    return RE::BSEventNotifyControl::kContinue;
-                }
-
-                const auto& cfg = Config::Get();
-                if (cfg.skipHiddenQuests && IsHiddenQuest(quest)) {
-                    return RE::BSEventNotifyControl::kContinue;
-                }
-                if (cfg.skipMiscQuests &&
-                    ClassifyQuestType(static_cast<std::uint32_t>(quest->GetType())) == QuestKind::Misc) {
-                    return RE::BSEventNotifyControl::kContinue;
-                }
-
-                const auto label = QuestLabel(quest);
-                const float mult = QuestMultiplier(quest);
-
-                if (cfg.awardQuestComplete && quest->IsCompleted()) {
-                    if (State().awardedQuestCompletes.insert(quest->GetFormID()).second) {
-                        PlayerXp::Get().Award(AwardSource::QuestComplete, cfg.questCompleteXP * mult, label);
-                    }
-                    return RE::BSEventNotifyControl::kContinue;
-                }
-
-                if (cfg.awardQuestStages && ev->stage != 0) {
-                    const auto key = PackQuestStage(quest->GetFormID(), ev->stage);
-                    if (State().awardedQuestStages.insert(key).second) {
-                        PlayerXp::Get().Award(AwardSource::QuestStage, cfg.questStageXP * mult, label);
-                    }
-                }
-                return RE::BSEventNotifyControl::kContinue;
-            }
-
-            RE::BSEventNotifyControl ProcessEvent(const RE::TESCombatEvent* ev, RE::BSTEventSource<RE::TESCombatEvent>*) override
-            {
-                if (!ev) {
-                    return RE::BSEventNotifyControl::kContinue;
-                }
-                // After a fight ends, the current cell may now be marked cleared.
-                if (ev->newState.get() == RE::ACTOR_COMBAT_STATE::kNone && IsPlayerRef(ev->actor.get())) {
-                    CheckPlayerLocation();
-                }
-                return RE::BSEventNotifyControl::kContinue;
-            }
-
-            RE::BSEventNotifyControl ProcessEvent(const RE::TESDeathEvent* ev, RE::BSTEventSource<RE::TESDeathEvent>*) override
-            {
-                const auto& cfg = Config::Get();
-                if (!cfg.AwardKills() || !ev || !ev->actorDying) {
-                    return RE::BSEventNotifyControl::kContinue;
-                }
-                if (!IsPlayerRef(ev->actorKiller.get())) {
-                    return RE::BSEventNotifyControl::kContinue;
-                }
-
-                auto* dying = ev->actorDying->As<RE::Actor>();
-                if (!dying || dying->IsPlayerRef() || dying->IsGhost()) {
-                    return RE::BSEventNotifyControl::kContinue;
-                }
-
-                float xp = cfg.killXP;
-                std::string_view detail = "defeat";
-                if (HasKeywordEDID(dying, "ActorTypeDragon") || dying->GetLevel() >= 30) {
-                    xp = cfg.bossKillXP;
-                    detail = "boss";
-                }
-
-                auto* player = RE::PlayerCharacter::GetSingleton();
-                float bonus = 0.0f;
-                if (cfg.flavor.undeadCombatBonus > 0.0f && HasKeywordEDID(dying, "ActorTypeUndead")) {
-                    bonus += cfg.flavor.undeadCombatBonus;
-                    detail = "undead";
-                }
-                if (cfg.flavor.stealthCombatBonus > 0.0f && player && player->IsSneaking()) {
-                    bonus += cfg.flavor.stealthCombatBonus;
-                    detail = "ambush";
-                }
-                if (cfg.flavor.beastCombatBonus > 0.0f &&
-                    (PlayerIsBeastForm(player) || HasKeywordEDID(dying, "ActorTypeAnimal"))) {
-                    bonus += cfg.flavor.beastCombatBonus;
-                    detail = "hunt";
-                }
-                xp *= (1.0f + bonus / 100.0f);
-
-                PlayerXp::Get().Award(AwardSource::Kill, xp, detail);
-                CheckPlayerLocation();
-                return RE::BSEventNotifyControl::kContinue;
-            }
-
-            RE::BSEventNotifyControl ProcessEvent(const RE::TESActorLocationChangeEvent* ev, RE::BSTEventSource<RE::TESActorLocationChangeEvent>*) override
-            {
-                if (!ev) {
-                    return RE::BSEventNotifyControl::kContinue;
-                }
-                const auto actor = ev->actor.get();
-                if (!actor || !actor->IsPlayerRef()) {
-                    return RE::BSEventNotifyControl::kContinue;
-                }
-                CheckPlayerLocation();
-                return RE::BSEventNotifyControl::kContinue;
-            }
-
-            RE::BSEventNotifyControl ProcessEvent(const RE::LocationDiscovery::Event* ev, RE::BSTEventSource<RE::LocationDiscovery::Event>*) override
-            {
-                const auto& cfg = Config::Get();
-                if (!cfg.AwardDiscovery() || !ev) {
-                    return RE::BSEventNotifyControl::kContinue;
-                }
-
-                // Dedup by a simple hash of the worldspace token + pointer identity.
-                const auto key = static_cast<std::uint32_t>(
-                    std::hash<const void*>{}(ev->mapMarkerData) ^ std::hash<const char*>{}(ev->worldspaceID ? ev->worldspaceID : ""));
-                if (!State().awardedDiscoveries.insert(key).second) {
-                    return RE::BSEventNotifyControl::kContinue;
-                }
-
-                auto* player = RE::PlayerCharacter::GetSingleton();
-                auto* here = player ? player->GetCurrentLocation() : nullptr;
-                PlayerXp::Get().Award(
-                    AwardSource::Discovery,
-                    cfg.discoveryXP * PlaceMultiplier(here),
-                    "location discovered");
-                return RE::BSEventNotifyControl::kContinue;
-            }
-
-            RE::BSEventNotifyControl ProcessEvent(const RE::BooksRead::Event* ev, RE::BSTEventSource<RE::BooksRead::Event>*) override
-            {
-                const auto& cfg = Config::Get();
-                if (!cfg.AwardReading() || !ev || !ev->book) {
-                    return RE::BSEventNotifyControl::kContinue;
-                }
-                if (!State().awardedBooks.insert(ev->book->GetFormID()).second) {
-                    return RE::BSEventNotifyControl::kContinue;
-                }
-                const char* name = ev->book->GetName();
-                PlayerXp::Get().Award(AwardSource::Reading, cfg.readingXP, name && name[0] ? name : "book");
-                return RE::BSEventNotifyControl::kContinue;
-            }
-
-            RE::BSEventNotifyControl ProcessEvent(const RE::SkillIncrease::Event* ev, RE::BSTEventSource<RE::SkillIncrease::Event>*) override
-            {
-                const auto& cfg = Config::Get();
-                if (!ev) {
-                    return RE::BSEventNotifyControl::kContinue;
-                }
-                auto* player = RE::PlayerCharacter::GetSingleton();
-                if (ev->player && player && ev->player != player) {
-                    return RE::BSEventNotifyControl::kContinue;
-                }
-
-                if (IsCraftingSkill(ev->actorValue)) {
-                    if (!cfg.AwardCrafting()) {
-                        return RE::BSEventNotifyControl::kContinue;
-                    }
-                    PlayerXp::Get().Award(AwardSource::Crafting, cfg.craftingXP, "craft");
-                } else {
-                    if (!cfg.AwardSkillUps()) {
-                        return RE::BSEventNotifyControl::kContinue;
-                    }
-                    PlayerXp::Get().Award(AwardSource::SkillUp, cfg.skillUpXP, "training");
-                }
-                return RE::BSEventNotifyControl::kContinue;
-            }
-        };
-
-        void SnapshotExistingClears()
-        {
-            auto& state = State();
-            if (state.snapshottedClears) {
-                return;
-            }
-
-            auto* handler = RE::TESDataHandler::GetSingleton();
-            if (!handler) {
-                return;
-            }
-
-            std::uint32_t count = 0;
-            for (auto* location : handler->GetFormArray<RE::BGSLocation>()) {
-                if (location && location->IsCleared()) {
-                    state.awardedClears.insert(location->GetFormID());
-                    ++count;
-                }
-            }
-            state.snapshottedClears = true;
-            logger::info("Snapshotted {} already-cleared locations so mid-play installs do not dump XP", count);
-        }
-    }
-
-    void OnSaveLoaded()
-    {
-        SnapshotExistingClears();
-        CheckPlayerLocation();
-        PlayerXp::Get().SyncGlobal();
-    }
-
-    void RegisterEventSinks()
-    {
-        auto& handler = Handler::Get();
-        auto* holder = RE::ScriptEventSourceHolder::GetSingleton();
-        if (holder) {
-            holder->AddEventSink<RE::TESQuestStageEvent>(&handler);
-            holder->AddEventSink<RE::TESCombatEvent>(&handler);
-            holder->AddEventSink<RE::TESDeathEvent>(&handler);
-            holder->AddEventSink<RE::TESActorLocationChangeEvent>(&handler);
-        } else {
-            logger::error("ScriptEventSourceHolder missing");
-        }
-
-        if (auto* discovery = RE::LocationDiscovery::GetEventSource()) {
-            discovery->AddEventSink(&handler);
-        } else {
-            logger::warn("LocationDiscovery event source missing");
-        }
-
-        if (auto* books = RE::BooksRead::GetEventSource()) {
-            books->AddEventSink(&handler);
-        } else {
-            logger::warn("BooksRead event source missing");
-        }
-
-        if (auto* skills = RE::SkillIncrease::GetEventSource()) {
-            skills->AddEventSink(&handler);
-        } else {
-            logger::warn("SkillIncrease event source missing");
-        }
-
-        logger::info("Registered quest, discovery, location, combat, death, book, and skill-up sinks");
-    }
+	if constexpr (requires { type.get(); }) {
+		return static_cast<std::uint16_t>(type.get());
+	} else if constexpr (requires { type.underlying(); }) {
+		return static_cast<std::uint16_t>(type.underlying());
+	} else {
+		return static_cast<std::uint16_t>(type);
+	}
 }
+
+std::vector<std::string> LocationKeywords(RE::BGSLocation* location)
+{
+	std::vector<std::string> names;
+	if (!location) {
+		return names;
+	}
+	// LookupByEditorID + HasKeyword is the v8-safe path. ForEachKeyword
+	// overloads and keyword-array iteration differ across CommonLib pins.
+	for (const auto& entry : kLocTypeMap) {
+		const auto* keyword = RE::TESForm::LookupByEditorID<RE::BGSKeyword>(entry.keyword.data());
+		if (keyword && location->HasKeyword(keyword)) {
+			names.emplace_back(entry.keyword);
+		}
+	}
+	return names;
+}
+
+std::optional<std::uint16_t> MarkerTypeFor(RE::BGSLocation* location)
+{
+	if (!location) {
+		return std::nullopt;
+	}
+	RE::TESObjectREFR* marker = nullptr;
+	if (location->worldLocMarker) {
+		const auto handle = location->worldLocMarker.get();
+		if constexpr (requires { handle.get(); }) {
+			marker = handle.get();
+		} else {
+			marker = handle;
+		}
+	}
+	if (!marker) {
+		return std::nullopt;
+	}
+	if (auto* extra = marker->extraList.GetByType<RE::ExtraMapMarker>()) {
+		if (extra->mapData) {
+			return MarkerEnumValue(extra->mapData->type);
+		}
+	}
+	return std::nullopt;
+}
+
+PlaceKind PlaceFor(RE::BGSLocation* location)
+{
+	const auto keywords = LocationKeywords(location);
+	const auto marker = MarkerTypeFor(location);
+	const char* edid = location ? location->GetFormEditorID() : "";
+	return ClassifyPlace(keywords, marker, edid ? edid : "");
+}
+
+std::uint8_t QuestCKType(RE::TESQuest* quest)
+{
+	if (!quest) {
+		return 0;
+	}
+	return static_cast<std::uint8_t>(quest->GetType());
+}
+
+QuestKind KindFor(RE::TESQuest* quest)
+{
+	const char* edid = quest ? quest->GetFormEditorID() : "";
+	const std::vector<std::string_view> none;
+	return ClassifyQuest(QuestCKType(quest), edid ? edid : "", none);
+}
+
+bool ShouldSkipQuest(RE::TESQuest* quest)
+{
+	const auto& cfg = Config::Get();
+	if (!quest) {
+		return true;
+	}
+	if (cfg.skipHiddenQuests && quest->IsHidden()) {
+		return true;
+	}
+	if (cfg.skipMiscQuests && KindFor(quest) == QuestKind::Misc) {
+		return true;
+	}
+	return false;
+}
+
+std::unordered_set<RE::FormID> g_cleared;
+std::unordered_set<RE::FormID> g_clearedAtStart;
+
+void RememberAlreadyCleared()
+{
+	g_clearedAtStart.clear();
+	if (auto* player = RE::PlayerCharacter::GetSingleton()) {
+		if (auto* location = player->GetCurrentLocation(); location && location->IsCleared()) {
+			g_clearedAtStart.insert(location->GetFormID());
+		}
+	}
+}
+
+void MaybeAwardClear(RE::BGSLocation* location)
+{
+	if (!location || !location->IsCleared()) {
+		return;
+	}
+	const auto id = location->GetFormID();
+	if (g_cleared.contains(id)) {
+		return;
+	}
+	if (g_clearedAtStart.contains(id)) {
+		g_cleared.insert(id);
+		return;
+	}
+	g_cleared.insert(id);
+	const auto kind = PlaceFor(location);
+	const float xp = Awards::Scale(static_cast<float>(Config::Get().ClearXP(kind)), Category::Clear);
+	Awards::Give(xp, Key(kind));
+}
+
+class QuestSink : public RE::BSTEventSink<RE::TESQuestStageEvent> {
+public:
+	RE::BSEventNotifyControl ProcessEvent(
+		const RE::TESQuestStageEvent* event,
+		RE::BSTEventSource<RE::TESQuestStageEvent>*) override
+	{
+		if (!event || !Config::Get().enabled) {
+			return RE::BSEventNotifyControl::kContinue;
+		}
+		auto* quest = RE::TESForm::LookupByID<RE::TESQuest>(event->formID);
+		if (ShouldSkipQuest(quest)) {
+			return RE::BSEventNotifyControl::kContinue;
+		}
+
+		auto& cfg = Config::Get();
+		if (cfg.awardQuestStages) {
+			Awards::Give(
+				Awards::Scale(static_cast<float>(cfg.QuestXP(QuestKind::Objectives)), Category::Quest),
+				"quest objective");
+		}
+		if (cfg.awardQuestComplete && quest && quest->IsCompleted()) {
+			const auto kind = KindFor(quest);
+			float amount = static_cast<float>(cfg.QuestXP(kind));
+			if (kind == QuestKind::Main) {
+				amount *= cfg.mainQuestMultiplier;
+			}
+			Awards::Give(Awards::Scale(amount, Category::Quest), Key(kind));
+		}
+		return RE::BSEventNotifyControl::kContinue;
+	}
+};
+
+class DiscoverSink : public RE::BSTEventSink<RE::LocationDiscovery::Event> {
+public:
+	RE::BSEventNotifyControl ProcessEvent(
+		const RE::LocationDiscovery::Event*,
+		RE::BSTEventSource<RE::LocationDiscovery::Event>*) override
+	{
+		if (!Config::Get().enabled) {
+			return RE::BSEventNotifyControl::kContinue;
+		}
+		auto* player = RE::PlayerCharacter::GetSingleton();
+		auto* location = player ? player->GetCurrentLocation() : nullptr;
+		const auto kind = PlaceFor(location);
+		Awards::Give(
+			Awards::Scale(static_cast<float>(Config::Get().DiscoveryXP(kind)), Category::Discovery),
+			Key(kind));
+		return RE::BSEventNotifyControl::kContinue;
+	}
+};
+
+class DeathSink : public RE::BSTEventSink<RE::TESDeathEvent> {
+public:
+	RE::BSEventNotifyControl ProcessEvent(
+		const RE::TESDeathEvent* event,
+		RE::BSTEventSource<RE::TESDeathEvent>*) override
+	{
+		auto& cfg = Config::Get();
+		if (!event || !cfg.enabled) {
+			return RE::BSEventNotifyControl::kContinue;
+		}
+
+		auto* player = RE::PlayerCharacter::GetSingleton();
+		if (player) {
+			MaybeAwardClear(player->GetCurrentLocation());
+		}
+
+		if (!cfg.awardKilling || !player || event->actorKiller.get() != player) {
+			return RE::BSEventNotifyControl::kContinue;
+		}
+
+		auto* victim = event->actorDying.get();
+		float base = cfg.killXP;
+		if (victim) {
+			if (const auto* edid = victim->GetFormEditorID(); edid && ContainsI(edid, "Boss")) {
+				base = cfg.bossKillXP;
+			}
+		}
+		float bonus = 1.f;
+		if (victim && cfg.undeadCombatBonus > 0.f && victim->HasKeywordString("ActorTypeUndead")) {
+			bonus += cfg.undeadCombatBonus / 100.f;
+		}
+		if (cfg.stealthCombatBonus > 0.f && player->IsSneaking()) {
+			bonus += cfg.stealthCombatBonus / 100.f;
+		}
+		if (victim && cfg.beastCombatBonus > 0.f && victim->HasKeywordString("ActorTypeAnimal")) {
+			bonus += cfg.beastCombatBonus / 100.f;
+		}
+		Awards::Give(Awards::Scale(base * bonus, Category::Combat), "kill");
+		return RE::BSEventNotifyControl::kContinue;
+	}
+};
+
+class SkillSink : public RE::BSTEventSink<RE::SkillIncrease::Event> {
+public:
+	RE::BSEventNotifyControl ProcessEvent(
+		const RE::SkillIncrease::Event* event,
+		RE::BSTEventSource<RE::SkillIncrease::Event>*) override
+	{
+		auto& cfg = Config::Get();
+		if (!event || !cfg.enabled) {
+			return RE::BSEventNotifyControl::kContinue;
+		}
+		const auto skill = SkillFromActorValue(static_cast<std::int32_t>(event->actorValue));
+		if (!skill) {
+			return RE::BSEventNotifyControl::kContinue;
+		}
+		const float weight = cfg.SkillWeight(*skill) / 100.f;
+		Awards::Give(Awards::Scale(cfg.skillUpXP * weight, Category::SkillUp), Key(*skill));
+		return RE::BSEventNotifyControl::kContinue;
+	}
+};
+
+class BookSink : public RE::BSTEventSink<RE::BooksRead::Event> {
+public:
+	RE::BSEventNotifyControl ProcessEvent(
+		const RE::BooksRead::Event*,
+		RE::BSTEventSource<RE::BooksRead::Event>*) override
+	{
+		auto& cfg = Config::Get();
+		if (!cfg.enabled || !cfg.awardReading) {
+			return RE::BSEventNotifyControl::kContinue;
+		}
+		Awards::Give(Awards::Scale(cfg.readingXP, Category::Reading), "reading");
+		return RE::BSEventNotifyControl::kContinue;
+	}
+};
+
+QuestSink g_quest;
+DiscoverSink g_discover;
+DeathSink g_death;
+BookSink g_book;
+SkillSink g_skill;
+
+#endif  // ADVENTUREXP_WITH_GAME
+
+}  // namespace
+
+void Register()
+{
+#ifdef ADVENTUREXP_WITH_GAME
+	if (auto* src = RE::ScriptEventSourceHolder::GetSingleton()) {
+		src->AddEventSink(&g_quest);
+		src->AddEventSink(&g_death);
+	}
+	if (auto* src = RE::LocationDiscovery::GetEventSource()) {
+		src->AddEventSink(&g_discover);
+	}
+	if (auto* src = RE::BooksRead::GetEventSource()) {
+		src->AddEventSink(&g_book);
+	}
+	if (auto* src = RE::SkillIncrease::GetEventSource()) {
+		src->AddEventSink(&g_skill);
+	}
+	RememberAlreadyCleared();
+#endif
+}
+
+void Unregister()
+{
+#ifdef ADVENTUREXP_WITH_GAME
+	if (auto* src = RE::ScriptEventSourceHolder::GetSingleton()) {
+		src->RemoveEventSink(&g_quest);
+		src->RemoveEventSink(&g_death);
+	}
+	if (auto* src = RE::LocationDiscovery::GetEventSource()) {
+		src->RemoveEventSink(&g_discover);
+	}
+	if (auto* src = RE::BooksRead::GetEventSource()) {
+		src->RemoveEventSink(&g_book);
+	}
+	if (auto* src = RE::SkillIncrease::GetEventSource()) {
+		src->RemoveEventSink(&g_skill);
+	}
+#endif
+}
+
+}  // namespace AdventureXP::Events

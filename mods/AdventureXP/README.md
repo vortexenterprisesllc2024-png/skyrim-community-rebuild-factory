@@ -1,167 +1,171 @@
-# AdventureXP 4.0
+# AdventureXP 4.2
 
-Working title. Public name is TBD.
+A **brand-new**, clean-room SKSE plugin for *The Elder Scrolls V: Skyrim Special Edition* (Anniversary Edition **1.7.104.0**). It awards **player level XP** for finishing quests, discovering locations, and clearing dungeons — adventure-first progression rather than grinding a skill.
 
-A **brand-new**, clean-room SKSE plugin for *The Elder Scrolls V: Skyrim Special Edition* (Anniversary Edition **1.7.104.0**), public name **Adventure EXP w Playstyle Presets**. It awards **player level XP** for finishing quests, discovering locations, and clearing dungeons — the same kind of adventure-first progression you see in EverQuest and other RPGs, rather than leveling up because you ground a skill.
+**Version 4.2.0** adds a Skills page (18 vanilla skill sliders) and specialist playstyles. It is not a continuation of anyone else’s 3.x package.
 
-**Version 4.0.0** is a new product line. It is not a continuation of anyone else’s 3.x package.
-
-Similar Skyrim mods exist. **Every line of code and every asset in this archive is newly written.** Nothing here is copied, forked, or derived from zax’s Experience packages or source. Credit is not permission.
+Similar Skyrim mods exist. **Every line of code and every asset in this archive is newly written.** Nothing here is copied, forked, or derived from other XP plugins or their source. Credit is not permission. See `CLEANROOM.md`.
 
 ## What it does
 
-1. **Ignores vanilla skill-up leveling** when configured, by setting the stock game setting `fXPPerSkillRank` to `0` at runtime. Skills still improve; they just stop feeding the vanilla player-XP formula. Packs that want training XP use AdventureXP’s own skill-up / crafting sliders.
-2. **Awards player XP** into the vanilla `PlayerSkills` pool so the stock level-up / perk-point flow still works:
-   - quest stage updates and quest completion
-   - map-marker location discovery
-   - locations the game marks **cleared**
-   - optional combat, reading, crafting ranks, and other skill-ups (driven by the active pack)
-3. **Global XP percent** (`fGlobalXPPercent`).
-4. **On-screen XP toast** via `DebugNotification` (no third-party HUD SWF).
-5. **`AdventureXP_Percent` global** in `AdventureXP.esl` so other mods / HUD widgets can read 0–100 progress.
-6. **Play-style presets** — fifteen named packs that move the real XP category sliders (not cosmetic labels). INI `sPreset=` applies a pack on load. The same `ApplyPreset()` table is exposed to Papyrus so SkyUI MCM can do it in one click later.
-
-Out of scope for this slice: a finished SkyUI menu, HUDHooks / stats-menu replacements, compatibility patches for other leveling mods, and any Nexus upload.
-
-## Play-style packs (4.0)
-
-Set `sPreset` in `AdventureXP.ini` to one of these ids (case-insensitive). Each pack writes **quests / discovery / clears / combat / reading / crafting / skill-ups** plus a small flavor bonus where it matters (undead, sneak, hunt).
-
-| Pack | What actually changes |
-| --- | --- |
-| **Adventurer** | Quests, discovery, clears. Optional sources off. Neutral quest/place scales. |
-| **Vigilant** | Barrow clears, undead, temple work, scripture. **Daedric = 0**. |
-| **Conjurer** (`summoner`) | College, reading, skill-ups. Open war and heavy clears down. |
-| **Thief** | Discovery, Thieves/guild work, skill-ups. Civil War and big clears denied. |
-| **Assassin** | Brotherhood-style guild, stealth kills. Tourism and books denied. |
-| **Paladin** | Oaths and cleansing. **Daedric = 0**. Undead bonus. |
-| **Warrior** | Clears, kills, and the forge (crafting / martial skill-ups). |
-| **Mage** | Reading, enchanting/alchemy, and school ranks. |
-| **Ranger** | Discovery first, then bow kills and camps. |
-| **Bard** | Quests, the road, speech-heavy skill-ups, songs (reading). |
-| **Merchant** | Crafting + speech skill-ups + jobs; combat almost off. |
-| **Necromancer** | Tombs, treatises, and the dead (clear + reading + undead bonus). |
-| **Beastblood** | Hunt and clears; books off; beast/animal kill bonus. |
-| **Spellsword** | Balanced war-mage: combat + training + clears. |
-| **Monk** | Pilgrimage and training; crafting off; restrained kill weight. |
-
-`sPreset=Custom` skips the pack table and uses whatever is in `[Weights]` / `[Flavor]`. After a named pack loads, those same sliders can still be overridden in the INI.
-
-Papyrus (for a future MCM, not shipped as a compiled menu):
-
-```
-AdventureXP.ApplyPreset("Thief")
-AdventureXP.GetCategoryWeight("discovery")
-AdventureXP.SetCategoryWeight("combat", 80.0)
-```
-
-Source: `scripts/papyrus/AdventureXP.psc`. Newly written. It does not call any third-party natives.
+1. Awards player XP into an adventure pool (quests, discovery, clears, optional combat / reading / crafting / skill-ups).
+2. Play-style presets write category sliders, quest/place amounts, and per-skill weights.
+3. Global XP percent plus per-quest and per-place **absolute XP** (0–200). Per-skill weights are 0–100%.
+4. On-screen XP toast via `DebugNotification` (no third-party HUD SWF).
+5. `AdventureXP_Percent` global in `AdventureXP.esl` for other HUDs.
+6. **SkyUI MCM named AdventureXP** — enable/disable, pick a pack, edit every category. Calls only `AdventureXP.*` natives.
 
 ## Requirements (in-game)
 
 - Skyrim SE AE **1.7.104.0**
 - [SKSE](https://skse.silverlock.org/) **2.3.1**
-- [Address Library for SKSE Plugins](https://www.nexusmods.com/skyrimspecialedition/mods/32444) **format 5**
-- The plugin DLL is **4.0.0** and declares Address Library compatibility (CommonLibSSE-NG v8, including the v5 flag)
+- [Address Library for SKSE Plugins](https://www.nexusmods.com/skyrimspecialedition/mods/32444)
+- [SkyUI](https://www.nexusmods.com/skyrimspecialedition/mods/12604) **5.2 SE** (MCM only; the DLL still awards XP without it)
+- `AdventureXP.dll` built on Windows from this tree (this pack ships Papyrus + INI + ESL + C++ source)
 
 ## Install (Vortex / MO2)
 
-Packed zip name: **`AdventureXP-4.0.0.zip`**. Data-root layout:
+Packed zip name: **`AdventureXP-4.2.0.zip`**. Data-root layout:
 
 ```
 Data/AdventureXP.esl
+Data/AdventureXP.seq
 Data/SKSE/Plugins/AdventureXP.dll
 Data/SKSE/Plugins/AdventureXP.ini
+Data/Scripts/Source/AdventureXP.psc
+Data/Scripts/Source/AdventureXPMCM.psc
+Data/Scripts/AdventureXPMCM.pex   (after you compile — see below)
+Data/Scripts/AdventureXP.pex
 ```
 
-Enable `AdventureXP.esl`. Launch through `skse64_loader.exe`.
+Enable `AdventureXP.esl` and SkyUI. Launch through `skse64_loader.exe`.
+
+In-game: **Pause → Mod Configuration → AdventureXP**.
 
 Logs: `Documents/My Games/Skyrim Special Edition/SKSE/AdventureXP.log`
 
-A mid-playthrough install **does not** dump XP for dungeons you already cleared.
+A mid-playthrough install **does not** dump XP for dungeons you already cleared. `AdventureXP.seq` starts the MCM quest on existing saves.
 
-## Configure
+## SkyUI MCM
 
-| Key | Meaning |
+The menu is `AdventureXPMCM` on quest `AdventureXPMCMQuest`. MCM script `GetVersion()` is **5**.
+
+| Page | Options |
 | --- | --- |
-| `sPreset` | Pack id, or `Custom` |
-| `fGlobalXPPercent` | Multiplier for every award |
-| `fQuestWeight` … `fSkillUpWeight` | Category sliders (100 = the base XP next to them) |
-| `bIgnoreSkillLeveling` | Zero `fXPPerSkillRank` |
-| `fUndeadCombatBonus` / `fStealthCombatBonus` / `fBeastCombatBonus` | Extra % on matching kills |
+| **General** | Award Adventure XP; Show Messages; Global XP (0–100%); Playstyle Pack |
+| **XP Sources** | Enable Killing; Enable Reading; Quests / Discovery / Clears / Combat / Reading / Crafting / Skill-ups (0–100%) |
+| **Quest Types** | Quest Objectives, Quest None, Main, College, Thieves, Brotherhood, Companions, Misc, Daedric, Side, Civil War, Dawnguard, Dragonborn (0–200 XP) |
+| **Discovery** | 39 place kinds, discover XP 0–200 |
+| **Clears** | The same 39 place kinds, clear XP 0–200 |
+| **Skills** | 18 vanilla skills in Magicka / Combat / Stealth groups (0–100%). Master Skill-ups at 0 turns all of these off. |
 
-Base XP amounts (`fQuestCompleteXP`, `fDiscoveryXP`, …) stay in the INI so a 150 combat weight means “150% of `fKillXP`”, not a hidden second table.
+There is no XP meter in AdventureXP, so there is no meter-mode control.
 
-## Build (Windows MSVC) — produces `AdventureXP.dll` 4.0.0
+College / Thieves / Brotherhood / Companions are separate. Dawnguard and Dragonborn are separate. Discovery and clear amounts are separate for every place kind.
 
-CommonLibSSE-NG is MSVC-ABI. This Linux agent box and Taquitos (no VS 2022) cannot link a loadable SKSE plugin. Factory / a VS 2022 machine:
+Place kinds: Altar, Camp, Castle, Castle Karstaag, Cave, City, Clearing, Daedric Shrine, Default, Docks, Doomstone, Dragon Lair, Dwemer Ruin, Farm, Fort, Giant Camp, Grove, Imperial Tower, Landmark, Lighthouse, Military Camp, Mine, Miraak Temple, Nordic Dwelling, Nordic Ruin, Nordic Tower, Orc Stronghold, Pass, Rock, Settlement, Shack, Shipwreck, Smelter, Stable, Standing Stone, Telvanni Tower, Town, Wheat Mill, Wood Mill.
 
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts\build-vs2022.ps1
+How a location is sorted is documented in `docs/PLACE_MAPPINGS.md`.
+
+### Persistence — no reload
+
+The DLL owns state and `AdventureXP.ini`. Every MCM control calls a native. Changes apply immediately. You do not quit to the main menu. The award toggle uses `SetToggleOptionValue` plus `SetOptionFlags` on the other General controls only. It never calls `ForcePageReset`, so you can turn awards back on without leaving General.
+
+### Packs in the MCM vs the INI
+
+They are the same table.
+
+- INI `sPreset=Thief` applies that pack on load.
+- MCM **Playstyle Pack** calls `AdventureXP.ApplyPreset("Thief")`.
+- Applying a pack writes the **full role-play table**: category masters, every quest type, discover/clear place biases, per-skill weights, skip-misc, main-quest multiplier, and undead/stealth/beast flavor.
+- After a pack is applied you can still nudge sliders. Editing a slider sets `sPreset=Custom` so the next load does not overwrite you.
+
+Papyrus:
+
+```
+AdventureXP.ApplyPreset("Thief")
+AdventureXP.GetCategoryWeight("discovery")
+AdventureXP.SetCategoryWeight("combat", 80.0)
+AdventureXP.SetQuestXP("College", 90)
+AdventureXP.SetDiscoveryXP("Cave", 30)
+AdventureXP.SetClearXP("Cave", 100)
+AdventureXP.GetSkillWeight("Illusion")
+AdventureXP.SetSkillWeight("Sneak", 80.0)
 ```
 
-That script finds VS 2022, bootstraps vcpkg if needed, builds the DLL, and writes `dist\packed\AdventureXP-4.0.0.zip`.
+## Rebuild the DLL (Windows)
 
-Manual equivalent:
+Linux host tests compile the classifiers only. **The live game still needs a Windows MSVC rebuild of `AdventureXP.dll`** before the new natives (`GetSkillWeight`, `SetSkillWeight`, plus quest/place/message/killing/reading) exist in-game.
 
-```bat
-git clone https://github.com/microsoft/vcpkg.git C:\vcpkg
-git -C C:\vcpkg checkout ee12231b20c95013c6638d845d04c91559a1d1ff
-C:\vcpkg\bootstrap-vcpkg.bat
-set VCPKG_ROOT=C:\vcpkg
+1. Visual Studio 2022 (x64) and [vcpkg](https://github.com/microsoft/vcpkg).
+2. Install CommonLibSSE-NG through vcpkg (`vcpkg.json` in this tree).
+3. `cmake --preset windows-msvc-release` then build `AdventureXP`.
+4. Copy `AdventureXP.dll` to `Data/SKSE/Plugins/`.
+5. Compile the two Papyrus scripts in the Creation Kit (or Caprica) so SkyUI can load `AdventureXPMCM.pex`.
 
-cmake --preset windows-msvc-release
-cmake --build --preset windows-msvc-release --parallel
-python scripts\pack.py --source
-```
+Event sink type names follow CommonLibSSE-NG. If your CommonLib revision names a sink differently, adjust `src/Events.cpp` only — `Types.h` / Config / Papyrus stay the same.
 
-CMake FetchContent-pins [alandtse/CommonLibVR](https://github.com/alandtse/CommonLibVR) **`d13d10a0ccb4945870eb841bf1ad8a6cf5ed84dd`** (CommonLibSSE-NG 8.0.1, `Format::SSEv5`). Configure fails if `IDDB.h` lacks SSEv5. `add_commonlibsse_plugin` embeds product version **4.0.0** and Address Library v5 compatibility.
+## Compile the MCM (Creation Kit)
 
-`SKSEPluginLoad` writes `AdventureXP.log` with Windows folder APIs (no REL), calls `SKSE::Init(skse, {.log=false})`, gates on SKSE `RuntimeVersion()` **1.7.104.x**, and defers Address Library / sinks / Papyrus until `kDataLoaded`. A foreign runtime logs and returns true without hooks.
+This pack ships `.psc` sources. SkyUI needs `.pex` on disk. Compile once on a Windows machine that has the Creation Kit and SkyUI:
 
-A GitHub Actions workflow (`.github/workflows/build.yml`) builds the Windows DLL and uploads both zips. That job does not run on this Origin remote — point a GitHub repo at the same tree, or run `scripts\build-vs2022.ps1` on a VS 2022 machine.
+1. Install SkyUI so `SKI_ConfigBase.pex` is in `Data/Scripts`.
+2. Copy `Scripts/Source/AdventureXP.psc` and `AdventureXPMCM.psc` into the CK source folder (`Source/Scripts` on SE).
+3. Compile **AdventureXP** (hidden native stub) then **AdventureXPMCM**.
+4. Copy the two `.pex` files to `Data/Scripts`.
+
+Caprica (optional): point `--import` at vanilla + SkyUI sources, compile the same two scripts, do **not** ship SkyUI’s own scripts.
+
+Until `.pex` exists, SkyUI will not list AdventureXP. The plugin DLL still runs from the INI.
+
+## Play-style packs
+
+Set `sPreset` or pick the same id in the MCM (case-insensitive):
+
+| Pack | Pays | Denies |
+| --- | --- | --- |
+| **Adventurer** | Quests, discovery, clears at stock amounts | Combat, reading, crafting, skill-ups |
+| **Vigilant** | Barrow clears, undead, scripture, Main, Dawnguard; Restoration ranks | Daedric = 0, Thieves/Brotherhood, busywork Misc |
+| **Summoner** (shows as Conjurer) | College, reading, Conjuration 100 | Combat, fortress clears, other schools low |
+| **Necromancer** (shows as Summoner) | Tombs, reading, Conjuration / Enchanting, Daedric medium | Fighting in person, military camps |
+| **Thief** | Discovery, Thieves Guild; Sneak / Lockpicking / Pickpocket / Speech 100 | Clears, Civil War, Main |
+| **Assassin** | Brotherhood, Sneak / One-handed / Archery | Other skills 0, reading, crafting |
+| **Paladin** | Main, holy clears, Restoration / One-handed / Block / Heavy | Daedric = 0, Thieves = 0, Brotherhood = 0 |
+| **Warrior** | Clears, kills, Companions, Civil War; One-handed / Two-handed / Block / Heavy / Smithing 100 | Reading, College, magic schools 0 |
+| **Mage** | College, reading; all six magic schools 100 | Combat skills 0, fort clears |
+| **Ranger** | Woods/camps/passes, Archery / Sneak / Light Armor | City Misc, hold capitals |
+| **Bard** | Side, Misc stories, Speech 100 | Clears, shield-wall combat |
+| **Merchant** | Crafting, Speech / Smithing / Alchemy | Combat = 0, clears = 0 |
+| **Beastblood** | The hunt, clears, Two-handed / Light Armor | Books, the forge, Misc busywork |
+| **Spellsword** | Combat + College + clears; Destruction / One-handed mixed | None — mixed war-mage |
+| **Monk** | Training, pilgrimage stones/altars; Restoration / Alteration | Crafting, Brotherhood, Thieves |
+| **Illusionist** | Illusion 100, Speech medium, College | Other magic schools 0, combat skills 0 |
+| **elementalist** (shows as Elementalist) | Destruction 100, College | Other schools 0 |
+| **Battlemage** | Destruction + Conjuration 100, One-handed / Heavy Armor mixed | Stealth skills 0 |
+
+MCM labels: Necromancer → Summoner, Summoner → Conjurer. `ApplyPreset("Conjurer")` still selects the Summoner id.
 
 ## Pack zips
 
-```bat
-python scripts\generate_esl.py
-python scripts\pack.py --source
+```bash
+python3 scripts/generate_esl.py
+python3 scripts/pack.py --allow-missing-dll --source
 ```
 
 Writes:
 
-- `dist/packed/AdventureXP-4.0.0.zip` — Vortex Data-root layout (DLL included when MSVC built it)
-- `dist/packed/AdventureXP-4.0.0-SOURCE.zip` — full clean-room source tree
-
-Layout-only (no DLL on this machine):
-
-```bash
-python3 scripts/pack.py --allow-missing-dll --source
-```
+- `dist/packed/AdventureXP-4.2.0.zip` — Vortex Data-root layout (DLL included when present)
+- `dist/packed/AdventureXP-4.2.0-SOURCE.zip` — this tree
 
 ## Host tests
 
 ```bash
-cmake --preset host-tests
-cmake --build --preset host-tests
-ctest --preset host-tests --output-on-failure
-python3 scripts/generate_esl.py
-python3 tests/test_esl.py
-python3 tests/test_pack_layout.py
-python3 scripts/assert-cleanroom.py
+scripts/host-test.sh
 ```
 
-Or `scripts/host-test.sh`, which also writes the official layout + source zips.
-
-Covers XP math, the 15 pack signatures (they must differ), ESL, zip layout, and Experience/zax filename asserts.
-
-See `CLEANROOM.md`. Host tests run `scripts/assert-cleanroom.py` so Experience/zax filenames cannot sneak into the tree.
+Covers C++ classifiers + INI load/save, ESL records, MCM-only-uses-`AdventureXP.*`, schema lockstep (39 places / 13 quest kinds / 18 skills), playstyle deny zeros (Illusionist skills, Vigilant Daedric), zip layout, and third-party filename / symbol asserts.
 
 ## License
 
 - **AdventureXP sources:** MIT (`LICENSE`).
-- **CommonLibSSE-NG** is GPL-3.0-or-later. A distributed `AdventureXP.dll` that links it is a GPL work.
-
-## Phase 2
-
-SkyUI MCM named **AdventureXP**: a dropdown of the same pack ids and the seven category sliders, calling `AdventureXP.ApplyPreset`. No MCM menu is shipped in 4.0.0 so the plugin compiles without Papyrus Studio.
+- A distributed `AdventureXP.dll` that links CommonLibSSE-NG is a GPL work.

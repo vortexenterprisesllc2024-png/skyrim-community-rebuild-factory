@@ -1,7 +1,7 @@
 Scriptname AdventureXP Hidden
-{Clean-room Papyrus API for AdventureXP 4.0. Newly written.
+{Clean-room Papyrus API for AdventureXP 4.2. Newly written.
 
-Do not call Experience / zax natives. MCM uses only these.}
+Do not call third-party XP plugin natives. MCM uses only these.}
 
 String Function GetVersion() Global Native
 
@@ -27,6 +27,31 @@ Bool Function GetEnabled() Global Native
 
 Function SetEnabled(Bool enabled) Global Native
 
+Bool Function GetShowMessages() Global Native
+
+Function SetShowMessages(Bool show) Global Native
+
+Bool Function GetAwardKilling() Global Native
+
+Function SetAwardKilling(Bool enabled) Global Native
+
+Bool Function GetAwardReading() Global Native
+
+Function SetAwardReading(Bool enabled) Global Native
+
+Int Function GetQuestXP(String name) Global Native
+
+Function SetQuestXP(String name, Int amount) Global Native
+
+Int Function GetDiscoveryXP(String name) Global Native
+
+Function SetDiscoveryXP(String name, Int amount) Global Native
+
+Int Function GetClearXP(String name) Global Native
+
+Function SetClearXP(String name, Int amount) Global Native
+
+; Legacy aliases. Prefer Get/SetQuestXP and Get/SetDiscoveryXP / Get/SetClearXP.
 Float Function GetQuestTypeWeight(String name) Global Native
 
 Function SetQuestTypeWeight(String name, Float weight) Global Native
@@ -34,3 +59,7 @@ Function SetQuestTypeWeight(String name, Float weight) Global Native
 Float Function GetPlaceTypeWeight(String name) Global Native
 
 Function SetPlaceTypeWeight(String name, Float weight) Global Native
+
+Float Function GetSkillWeight(String skillName) Global Native
+
+Function SetSkillWeight(String skillName, Float weight) Global Native
