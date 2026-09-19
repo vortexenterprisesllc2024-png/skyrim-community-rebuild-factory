@@ -7,9 +7,9 @@
 namespace AdventureXP::Awards {
 
 void Give(float amount, std::string_view reason);
-// Quest, Reading, Combat, SkillUp, Discovery, and Clear:
-// base * (categoryWeight/100). Crafting also multiplies by
-// (globalXPPercent/100).
+// Every XP Sources category (Quest, Discovery, Clear, Combat, Reading,
+// Crafting, SkillUp): base * (categoryWeight/100). fGlobalXPPercent is
+// reserved and unused for awards.
 float Scale(float base, Category category);
 // floor(sqrt(max(0, goldValue)) * readingMult). Notes/letters with gold 0
 // stay 0. BookSink passes this through Scale(..., Category::Reading).

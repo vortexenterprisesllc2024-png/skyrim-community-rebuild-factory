@@ -175,19 +175,13 @@ float Scale(float base, Category category)
 		return 0.f;
 	}
 	const float cat = cfg.CategoryWeight(category) / 100.f;
-	// Quest, Reading, Combat, Skill-ups, Discovery, and Clear ignore
-	// fGlobalXPPercent. Jo runs global at ~2%; a cave at iCave≈30 used to
-	// become 0.6 XP (toast suppressed). Pace discovery/clears with
-	// fDiscoveryWeight / fClearWeight / per-place sliders instead.
-	// Crafting still uses global. Give() still skips the toast when
-	// lround(amount) < 1 so "+0 XP" never appears.
-	if (category == Category::Quest || category == Category::Reading
-		|| category == Category::Combat || category == Category::SkillUp
-		|| category == Category::Discovery || category == Category::Clear) {
-		return base * cat;
-	}
-	const float global = cfg.globalXPPercent / 100.f;
-	return base * cat * global;
+	// Every XP Sources slider (Quest, Discovery, Clear, Combat, Reading,
+	// Crafting, SkillUp) ignores fGlobalXPPercent. Jo's live INI at 2%
+	// used to zero discovery/clears/crafting. Pace each source with its
+	// own weight / per-place / per-skill sliders. Global stays in the
+	// MCM/INI as reserved and unused for awards. Give() still skips the
+	// toast when lround(amount) < 1 so "+0 XP" never appears.
+	return base * cat;
 }
 
 void SetState(int level, float pool)

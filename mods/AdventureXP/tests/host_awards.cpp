@@ -54,19 +54,22 @@ int main()
 	cfg.SetCategoryWeight(Category::Combat, 100.f);
 	cfg.SetCategoryWeight(Category::Quest, 100.f);
 
-	// Discovery/Clear ignore global (Jo: iCave≈30 at 2% used to be 0.6, no toast).
-	// Crafting still uses global. Quest/Reading/Combat/SkillUp already ignore it.
-	const float withGlobal = 100.f * 1.f * (2.f / 100.f);
+	// All seven XP Sources sliders ignore global (Jo: iCave≈30 at 2% used to
+	// be 0.6, no toast; crafting used to be zeroed the same way).
 	assert(Near(Awards::Scale(100.f, Category::Quest), 100.f));
 	assert(Near(Awards::Scale(100.f, Category::Discovery), 100.f));
 	assert(Near(Awards::Scale(100.f, Category::Clear), 100.f));
 	assert(Near(Awards::Scale(30.f, Category::Discovery), 30.f));
 	assert(static_cast<int>(std::lround(static_cast<double>(Awards::Scale(30.f, Category::Discovery)))) >= 1);
 	assert(Near(Awards::Scale(100.f, Category::SkillUp), 100.f));
-	assert(Near(Awards::Scale(100.f, Category::Crafting), withGlobal));
+	assert(Near(Awards::Scale(100.f, Category::Crafting), 100.f));
+	assert(Near(Awards::Scale(8.f, Category::Crafting), 8.f));
 	cfg.SetCategoryWeight(Category::Discovery, 50.f);
 	assert(Near(Awards::Scale(30.f, Category::Discovery), 15.f));
 	cfg.SetCategoryWeight(Category::Discovery, 100.f);
+	cfg.SetCategoryWeight(Category::Crafting, 50.f);
+	assert(Near(Awards::Scale(8.f, Category::Crafting), 4.f));
+	cfg.SetCategoryWeight(Category::Crafting, 100.f);
 	// Jo skill path: SkillUpBaseXP * (skillWeight/100) then Scale(SkillUp) — global must not apply.
 	assert(Near(Awards::SkillUpBaseXP(4.f, 10, 10.f), 4.f));
 	assert(Near(Awards::SkillUpBaseXP(4.f, 29, 10.f), 11.6f));
@@ -92,6 +95,8 @@ int main()
 	assert(Near(Awards::Scale(10.f, Category::Combat), 10.f));
 	assert(Near(Awards::Scale(30.f, Category::Discovery), 30.f));
 	assert(Near(Awards::Scale(30.f, Category::Clear), 30.f));
+	assert(Near(Awards::Scale(8.f, Category::Crafting), 8.f));
+	assert(Near(Awards::Scale(100.f, Category::SkillUp), 100.f));
 
 	// Enable flags still gate Reading/Combat.
 	cfg.globalXPPercent = 2.f;
@@ -148,11 +153,11 @@ int main()
 	const float thresh24 = Awards::ThresholdForLevel(24);
 	assert(thresh24 > 150.f);
 
-	std::cout << "host_awards: Scale ignores global for Quest, Reading, Combat, and SkillUp\n";
+	std::cout << "host_awards: Scale ignores global for all seven XP Sources sliders\n";
 	std::cout << "host_awards: ReadingBaseXP sqrt(gold)*fReadingMult\n";
 	std::cout << "host_awards: SkillUpBaseXP linear in skill level (scale 10)\n";
 	std::cout << "host_awards: Give skips toast when lround(amount) < 1\n";
 	std::cout << "host_awards: SetState(24) keeps +100 XP in-bar (no fake level-1 pool)\n";
-	std::cout << "host_awards: Discovery/Clear ignore global (cave 30 at 2% stays 30)\n";
+	std::cout << "host_awards: Discovery/Clear/Crafting ignore global (cave 30 at 2% stays 30)\n";
 	return 0;
 }

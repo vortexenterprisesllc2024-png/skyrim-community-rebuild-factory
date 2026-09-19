@@ -4,8 +4,8 @@ Scriptname AdventureXPMCM extends SKI_ConfigBase
 Calls only AdventureXP.* natives. Do not add third-party XP plugin calls.}
 
 int Function GetVersion()
-	; 14 = Wizard playstyle pack display (on top of Title Case + Crafter).
-	return 14
+	; 15 = Global XP reserved (unused for awards); XP Sources sliders are the scale.
+	return 15
 endFunction
 
 string PAGE_GENERAL = "General"
@@ -600,7 +600,7 @@ event OnOptionHighlight(int a_option)
 	elseIf a_option == _oidPreset
 		SetInfoText("Choose a playstyle pack. Packs write quest types, places, and source sliders.")
 	elseIf a_option == _oidGlobal
-		SetInfoText("Scales all adventure XP. 100 is normal.")
+		SetInfoText("Reserved. Awards use the XP Sources sliders, not this global.")
 	elseIf a_option == _oidKilling
 		SetInfoText("Allow XP from kills. Combat slider is ignored while this is off.")
 	elseIf a_option == _oidReading
