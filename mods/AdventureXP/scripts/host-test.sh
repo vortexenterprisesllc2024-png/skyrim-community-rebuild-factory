@@ -6,6 +6,8 @@ g++ -std=c++20 -I include tests/host_types.cpp -o /tmp/adventurexp_host_types
 /tmp/adventurexp_host_types
 g++ -std=c++20 -I include tests/host_config.cpp src/Config.cpp src/Awards.cpp -o /tmp/adventurexp_host_config
 /tmp/adventurexp_host_config
+g++ -std=c++20 -I include tests/host_awards.cpp src/Config.cpp src/Awards.cpp -o /tmp/adventurexp_host_awards
+/tmp/adventurexp_host_awards
 g++ -std=c++20 -I include tests/host_presets.cpp src/Config.cpp src/Awards.cpp -o /tmp/adventurexp_host_presets
 /tmp/adventurexp_host_presets
 python3 scripts/generate_esl.py

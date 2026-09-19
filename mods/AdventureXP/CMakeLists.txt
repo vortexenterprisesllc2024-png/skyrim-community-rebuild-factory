@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.25)
 
 project(
     AdventureXP
-    VERSION 4.2.0
+    VERSION 4.2.1
     DESCRIPTION "Clean-room SKSE plugin: quest / explore / dungeon-clear player leveling"
     LANGUAGES CXX
 )
@@ -30,6 +30,11 @@ if(ADVENTUREXP_HOST_TESTS)
     target_include_directories(adventurexp_host_config PRIVATE include)
     target_compile_features(adventurexp_host_config PRIVATE cxx_std_20)
     add_test(NAME adventurexp_host_config COMMAND adventurexp_host_config)
+
+    add_executable(adventurexp_host_awards tests/host_awards.cpp src/Config.cpp src/Awards.cpp)
+    target_include_directories(adventurexp_host_awards PRIVATE include)
+    target_compile_features(adventurexp_host_awards PRIVATE cxx_std_20)
+    add_test(NAME adventurexp_host_awards COMMAND adventurexp_host_awards)
 
     add_executable(adventurexp_host_presets tests/host_presets.cpp src/Config.cpp src/Awards.cpp)
     target_include_directories(adventurexp_host_presets PRIVATE include)

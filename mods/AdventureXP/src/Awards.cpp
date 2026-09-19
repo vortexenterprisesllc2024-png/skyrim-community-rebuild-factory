@@ -85,6 +85,12 @@ float Scale(float base, Category category)
 		return 0.f;
 	}
 	const float cat = cfg.CategoryWeight(category) / 100.f;
+	// Reading and Combat ignore fGlobalXPPercent. Jo runs global at 2% so
+	// quests/discovery stay slow; 5 reading XP * 1.0 * 0.02 = 0.1, which the
+	// +%.0f toast prints as +0. Category weight still applies.
+	if (category == Category::Reading || category == Category::Combat) {
+		return base * cat;
+	}
 	const float global = cfg.globalXPPercent / 100.f;
 	return base * cat * global;
 }
