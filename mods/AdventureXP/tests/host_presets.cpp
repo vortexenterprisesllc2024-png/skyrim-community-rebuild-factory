@@ -9,13 +9,20 @@ int main()
 {
 	using namespace AdventureXP;
 
-	assert(kPresets.size() == 18);
+	assert(kPresets.size() == 19);
 	assert(FindPreset("Summoner") != FindPreset("Necromancer"));
 	assert(FindPreset("Conjurer") == FindPreset("Summoner"));
 	assert(FindPreset("Illusionist") != nullptr);
 	assert(FindPreset("elementalist") != nullptr);
 	assert(FindPreset("DestructionMage") == FindPreset("elementalist"));
 	assert(FindPreset("Battlemage") != nullptr);
+	assert(FindPreset("Crafter") != nullptr);
+	assert(kCrafter.categories.crafting == 100.f);
+	assert(kCrafter.categories.combat == 15.f);
+	assert(kCrafter.skills[SkillKind::Smithing] == 100.f);
+	assert(kCrafter.skills[SkillKind::Alchemy] == 100.f);
+	assert(kCrafter.skills[SkillKind::Enchanting] == 100.f);
+	assert(kCrafter.skills[SkillKind::OneHanded] == 0.f);
 	assert(FindPreset("no-such-pack") == nullptr);
 	assert(kVigilant.quests.daedric == 0);
 	assert(kPaladin.quests.daedric == 0);
@@ -158,6 +165,17 @@ int main()
 			assert(cfg.CategoryWeight(static_cast<Category>(i)) <= 100.f);
 		}
 	}
+
+	assert(cfg.ApplyPreset("Crafter"));
+	assert(cfg.preset == "Crafter");
+	assert(cfg.CategoryWeight(Category::Crafting) == 100.f);
+	assert(cfg.CategoryWeight(Category::Combat) == 15.f);
+	assert(cfg.CategoryWeight(Category::Clear) == 25.f);
+	assert(cfg.SkillWeight(SkillKind::Smithing) == 100.f);
+	assert(cfg.SkillWeight(SkillKind::Alchemy) == 100.f);
+	assert(cfg.SkillWeight(SkillKind::Enchanting) == 100.f);
+	assert(cfg.SkillWeight(SkillKind::OneHanded) == 0.f);
+	assert(cfg.awardKilling);  // combat > 0 enables killing like other low-combat packs
 
 	std::cout << "host_presets: ok\n";
 	return 0;

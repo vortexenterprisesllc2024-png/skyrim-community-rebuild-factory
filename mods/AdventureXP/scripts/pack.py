@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Assemble Vortex layout zip and/or full source zip for AdventureXP 4.2.6.
+"""Assemble Vortex layout zip and/or full source zip for AdventureXP 4.2.7.
 
 Layout zip (Data root):
 
@@ -64,7 +64,7 @@ def read_version() -> str:
         for line in header.read_text(encoding="utf-8").splitlines():
             if "ADVENTUREXP_VERSION_STRING" in line and '"' in line:
                 return line.split('"')[1]
-    return "4.2.6"
+    return "4.2.7"
 
 
 VERSION = read_version()

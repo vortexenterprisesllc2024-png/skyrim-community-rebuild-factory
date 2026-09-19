@@ -13,8 +13,8 @@ int main()
 {
 	assert(ADVENTUREXP_VERSION_MAJOR == 4);
 	assert(ADVENTUREXP_VERSION_MINOR == 2);
-	assert(ADVENTUREXP_VERSION_PATCH == 6);
-	assert(std::string_view(ADVENTUREXP_VERSION_STRING) == "4.2.6");
+	assert(ADVENTUREXP_VERSION_PATCH == 7);
+	assert(std::string_view(ADVENTUREXP_VERSION_STRING) == "4.2.7");
 	assert(kPlaceKeys.size() == static_cast<std::size_t>(PlaceKind::Count));
 	assert(kQuestKeys.size() == static_cast<std::size_t>(QuestKind::Count));
 	assert(kSkillKeys.size() == static_cast<std::size_t>(SkillKind::Count));

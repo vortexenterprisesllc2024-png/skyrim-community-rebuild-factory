@@ -176,7 +176,9 @@ def test_mcm_only_uses_adventurexp_natives() -> None:
     natives = api_natives()
     assert natives == set(API_NATIVES), natives
     assert "int Function GetVersion()" in text
-    assert "return 5" in text
+    assert "return 13" in text
+    assert '_catLabels[5] = "Crafting"' in text
+    assert "ToTitleCase(SplitCamel(_placeKeys[i]))" in text
     assert "Skills" in text
     assert "Magicka" in text
     assert "Combat" in text

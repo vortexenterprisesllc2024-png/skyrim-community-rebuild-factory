@@ -2,7 +2,7 @@
 
 A **brand-new**, clean-room SKSE plugin for *The Elder Scrolls V: Skyrim Special Edition* (Anniversary Edition **1.7.104.0**). It awards **player level XP** for finishing quests, discovering locations, and clearing dungeons — adventure-first progression rather than grinding a skill.
 
-**Version 4.2.6** is a crash hotfix on 4.2.5. Skill-up level is read from `SkillIncrease::Event::player` plus `GetPlayerRuntimeData().skills` (or versioned `AsActorValueOwner`). Do **not** call `PlayerCharacter::GetBaseActorValue` — that virtual AVO call crashed 1.7.104 (`call [rax+0x18]`). If the AV read fails, the award falls back to flat `fSkillUpXP` (no crash). Linear scale is unchanged: `fSkillUpXP * max(1, skillLevel) / max(1, fSkillUpLevelScale)` (default 10), then category/per-skill weights; SkillUp ignores global. Quest/Reading/Combat still ignore global. Toast suppress when `lround(amount) < 1`. Discovery, clears, and crafting still use global. It is not a continuation of anyone else’s 3.x package.
+**Version 4.2.7** adds the **Crafter** playstyle pack on top of the 4.2.6 skill-up crash hotfix. Skill-up level is still read from `SkillIncrease::Event::player` plus `GetPlayerRuntimeData().skills` (or versioned `AsActorValueOwner`). Do **not** call `PlayerCharacter::GetBaseActorValue` — that virtual AVO call crashed 1.7.104 (`call [rax+0x18]`). If the AV read fails, the award falls back to flat `fSkillUpXP` (no crash). Linear scale is unchanged: `fSkillUpXP * max(1, skillLevel) / max(1, fSkillUpLevelScale)` (default 10), then category/per-skill weights; SkillUp ignores global. Quest/Reading/Combat still ignore global. Toast suppress when `lround(amount) < 1`. Discovery, clears, and crafting still use global. It is not a continuation of anyone else’s 3.x package.
 
 Similar Skyrim mods exist. **Every line of code and every asset in this archive is newly written.** Nothing here is copied, forked, or derived from other XP plugins or their source. Credit is not permission. See `CLEANROOM.md`.
 
@@ -25,7 +25,7 @@ Similar Skyrim mods exist. **Every line of code and every asset in this archive 
 
 ## Install (Vortex / MO2)
 
-Packed zip name: **`AdventureXP-4.2.6.zip`**. Data-root layout:
+Packed zip name: **`AdventureXP-4.2.7.zip`**. Data-root layout:
 
 ```
 Data/AdventureXP.esl
@@ -48,7 +48,7 @@ A mid-playthrough install **does not** dump XP for dungeons you already cleared.
 
 ## SkyUI MCM
 
-The menu is `AdventureXPMCM` on quest `AdventureXPMCMQuest`. MCM script `GetVersion()` is **5**.
+The menu is `AdventureXPMCM` on quest `AdventureXPMCMQuest`. MCM script `GetVersion()` is **13**.
 
 | Page | Options |
 | --- | --- |
@@ -142,6 +142,7 @@ Set `sPreset` or pick the same id in the MCM (case-insensitive):
 | **Illusionist** | Illusion 100, Speech medium, College | Other magic schools 0, combat skills 0 |
 | **elementalist** (shows as Elementalist) | Destruction 100, College | Other schools 0 |
 | **Battlemage** | Destruction + Conjuration 100, One-handed / Heavy Armor mixed | Stealth skills 0 |
+| **Crafter** | Crafting 100; Smithing / Alchemy / Enchanting 100; town/smelter discovery | Combat low, clears low, combat skills 0 |
 
 MCM labels: Necromancer → Summoner, Summoner → Conjurer. `ApplyPreset("Conjurer")` still selects the Summoner id.
 
@@ -154,8 +155,8 @@ python3 scripts/pack.py --allow-missing-dll --source
 
 Writes:
 
-- `dist/packed/AdventureXP-4.2.6.zip` — Vortex Data-root layout (DLL included when present)
-- `dist/packed/AdventureXP-4.2.6-SOURCE.zip` — this tree
+- `dist/packed/AdventureXP-4.2.7.zip` — Vortex Data-root layout (DLL included when present)
+- `dist/packed/AdventureXP-4.2.7-SOURCE.zip` — this tree
 
 ## Host tests
 

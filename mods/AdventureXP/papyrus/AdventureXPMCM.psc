@@ -4,8 +4,8 @@ Scriptname AdventureXPMCM extends SKI_ConfigBase
 Calls only AdventureXP.* natives. Do not add third-party XP plugin calls.}
 
 int Function GetVersion()
-	; 5 = Skills page + per-skill weights. Award toggle still never resets the page.
-	return 5
+	; 13 = Title Case MCM labels (Crafting, Default, Town) + Crafter playstyle pack display.
+	return 13
 endFunction
 
 string PAGE_GENERAL = "General"
@@ -294,7 +294,7 @@ Function DrawDiscovery()
 	int i = 0
 	while i < 20
 		int value = AdventureXP.GetDiscoveryXP(_placeKeys[i])
-		_discOids[i] = AddSliderOption(SplitCamel(_placeKeys[i]), value, "{0}", flags)
+		_discOids[i] = AddSliderOption(ToTitleCase(SplitCamel(_placeKeys[i])), value, "{0}", flags)
 		i += 1
 	endWhile
 
@@ -302,7 +302,7 @@ Function DrawDiscovery()
 	AddHeaderOption("Discover")
 	while i < 39
 		int value = AdventureXP.GetDiscoveryXP(_placeKeys[i])
-		_discOids[i] = AddSliderOption(SplitCamel(_placeKeys[i]), value, "{0}", flags)
+		_discOids[i] = AddSliderOption(ToTitleCase(SplitCamel(_placeKeys[i])), value, "{0}", flags)
 		i += 1
 	endWhile
 endFunction
@@ -315,7 +315,7 @@ Function DrawClears()
 	int i = 0
 	while i < 20
 		int value = AdventureXP.GetClearXP(_placeKeys[i])
-		_clearOids[i] = AddSliderOption(SplitCamel(_placeKeys[i]), value, "{0}", flags)
+		_clearOids[i] = AddSliderOption(ToTitleCase(SplitCamel(_placeKeys[i])), value, "{0}", flags)
 		i += 1
 	endWhile
 
@@ -323,7 +323,7 @@ Function DrawClears()
 	AddHeaderOption("Clear")
 	while i < 39
 		int value = AdventureXP.GetClearXP(_placeKeys[i])
-		_clearOids[i] = AddSliderOption(SplitCamel(_placeKeys[i]), value, "{0}", flags)
+		_clearOids[i] = AddSliderOption(ToTitleCase(SplitCamel(_placeKeys[i])), value, "{0}", flags)
 		i += 1
 	endWhile
 endFunction
@@ -618,12 +618,12 @@ event OnOptionHighlight(int a_option)
 		endIf
 		int disc = FindOid(_discOids, a_option)
 		if disc >= 0
-			SetInfoText("XP for discovering a " + SplitCamel(_placeKeys[disc]) + ".")
+			SetInfoText("XP for discovering a " + ToTitleCase(SplitCamel(_placeKeys[disc])) + ".")
 			return
 		endIf
 		int clear = FindOid(_clearOids, a_option)
 		if clear >= 0
-			SetInfoText("XP for clearing a " + SplitCamel(_placeKeys[clear]) + ".")
+			SetInfoText("XP for clearing a " + ToTitleCase(SplitCamel(_placeKeys[clear])) + ".")
 			return
 		endIf
 		int skill = FindOid(_skillOids, a_option)

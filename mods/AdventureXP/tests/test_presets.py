@@ -31,6 +31,7 @@ PACKS = (
     "Illusionist",
     "elementalist",
     "Battlemage",
+    "Crafter",
 )
 
 
@@ -57,7 +58,7 @@ def test_presets_header() -> None:
         body = block.group("body").lower()
         assert "pays:" in body, pack
         assert "denies:" in body, pack
-    assert text.count("inline constexpr PlayStylePack k") == 18
+    assert text.count("inline constexpr PlayStylePack k") == 19
     assert "kIllusionist.skills[SkillKind::Illusion] == 100.f" in text
     assert "kIllusionist.skills[SkillKind::Alteration] == 0.f" in text
     assert "kVigilant.quests.daedric == 0" in text

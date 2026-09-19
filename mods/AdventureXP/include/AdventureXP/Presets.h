@@ -888,7 +888,59 @@ inline constexpr PlayStylePack kBattlemage{
 		SkillKind::Enchanting, 40),
 };
 
-inline constexpr std::array<PlayStylePack, 18> kPresets = {{
+
+// Crafter — pays: crafting category, smithing/alchemy/enchanting ranks,
+// town/smelter discovery, Misc/Side craft jobs. Denies: combat low, clears low,
+// swinging steel / war magic skills 0.
+inline constexpr PlayStylePack kCrafter{
+	"Crafter",
+	"Crafter",
+	{.quest = 70, .discovery = 80, .clear = 25, .combat = 15, .reading = 40, .crafting = 100, .skillup = 100},
+	{
+		.objectives = 80,
+		.none = 70,
+		.main = 40,
+		.college = 70,
+		.thieves = 35,
+		.brotherhood = 10,
+		.companions = 50,
+		.misc = 100,
+		.daedric = 30,
+		.side = 90,
+		.civilWar = 15,
+		.dawnguard = 25,
+		.dragonborn = 40,
+	},
+	{
+		Bias(50,
+			PlaceKind::City, 100,
+			PlaceKind::Town, 100,
+			PlaceKind::Settlement, 100,
+			PlaceKind::Smelter, 100,
+			PlaceKind::Farm, 90,
+			PlaceKind::WoodMill, 90,
+			PlaceKind::WheatMill, 90,
+			PlaceKind::Stable, 80,
+			PlaceKind::Docks, 80,
+			PlaceKind::Fort, 20,
+			PlaceKind::MilitaryCamp, 15,
+			PlaceKind::DragonLair, 20),
+		Bias(25,
+			PlaceKind::Fort, 15,
+			PlaceKind::MilitaryCamp, 10,
+			PlaceKind::Camp, 20,
+			PlaceKind::City, 0,
+			PlaceKind::Town, 0),
+	},
+	{.undead = 0, .stealth = 0, .beast = 0, .skipMisc = false, .mainQuestMultiplier = 0.85f},
+	BiasSkills(0,
+		SkillKind::Smithing, 100,
+		SkillKind::Alchemy, 100,
+		SkillKind::Enchanting, 100,
+		SkillKind::Speech, 40),
+};
+
+inline constexpr std::array<PlayStylePack, 19> kPresets = {{
 	kAdventurer,
 	kVigilant,
 	kSummoner,
@@ -907,6 +959,7 @@ inline constexpr std::array<PlayStylePack, 18> kPresets = {{
 	kIllusionist,
 	kElementalist,
 	kBattlemage,
+	kCrafter,
 }};
 
 static_assert(CategoriesCapped(kAdventurer.categories));
@@ -927,6 +980,13 @@ static_assert(CategoriesCapped(kMonk.categories));
 static_assert(CategoriesCapped(kIllusionist.categories));
 static_assert(CategoriesCapped(kElementalist.categories));
 static_assert(CategoriesCapped(kBattlemage.categories));
+static_assert(CategoriesCapped(kCrafter.categories));
+static_assert(kCrafter.categories.crafting == 100.f);
+static_assert(kCrafter.categories.combat == 15.f);
+static_assert(kCrafter.skills[SkillKind::Smithing] == 100.f);
+static_assert(kCrafter.skills[SkillKind::Alchemy] == 100.f);
+static_assert(kCrafter.skills[SkillKind::Enchanting] == 100.f);
+static_assert(kCrafter.skills[SkillKind::OneHanded] == 0.f);
 static_assert(kIllusionist.skills[SkillKind::Illusion] == 100.f);
 static_assert(kIllusionist.skills[SkillKind::Alteration] == 0.f);
 static_assert(kIllusionist.skills[SkillKind::Conjuration] == 0.f);
