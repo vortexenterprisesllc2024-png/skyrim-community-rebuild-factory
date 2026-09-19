@@ -2,7 +2,7 @@
 
 A **brand-new**, clean-room SKSE plugin for *The Elder Scrolls V: Skyrim Special Edition* (Anniversary Edition **1.7.104.0**). It awards **player level XP** for finishing quests, discovering locations, and clearing dungeons — adventure-first progression rather than grinding a skill.
 
-**Version 4.2.2** keeps the 4.2.1 Reading/Combat ignore-global rule. Reading XP is now `floor(sqrt(bookGold) * fReadingMult)`, then `* (readingWeight/100)`, and still ignores global. Notes/letters with gold 0 stay 0. Flat `fReadingXP` remains in the INI as an unused legacy key. Quests, discovery, clears, skill-ups, and other categories still multiply by global. It is not a continuation of anyone else’s 3.x package.
+**Version 4.2.3** keeps the 4.2.1 Reading/Combat ignore-global rule and the 4.2.2 reading formula `floor(sqrt(bookGold) * fReadingMult)`. `Awards::Give` still adds fractional XP to the pool, but suppresses the on-screen toast when `lround(amount) < 1` so `fGlobalXPPercent=2` no longer shows `+0 XP (quest objective)` / `+0 XP (kill)`. Visible toasts print the rounded integer with `%d`. Notes/letters with gold 0 stay 0. Flat `fReadingXP` remains in the INI as an unused legacy key. Quests, discovery, clears, skill-ups, and other categories still multiply by global. It is not a continuation of anyone else’s 3.x package.
 
 Similar Skyrim mods exist. **Every line of code and every asset in this archive is newly written.** Nothing here is copied, forked, or derived from other XP plugins or their source. Credit is not permission. See `CLEANROOM.md`.
 
@@ -25,7 +25,7 @@ Similar Skyrim mods exist. **Every line of code and every asset in this archive 
 
 ## Install (Vortex / MO2)
 
-Packed zip name: **`AdventureXP-4.2.2.zip`**. Data-root layout:
+Packed zip name: **`AdventureXP-4.2.3.zip`**. Data-root layout:
 
 ```
 Data/AdventureXP.esl
@@ -154,8 +154,8 @@ python3 scripts/pack.py --allow-missing-dll --source
 
 Writes:
 
-- `dist/packed/AdventureXP-4.2.2.zip` — Vortex Data-root layout (DLL included when present)
-- `dist/packed/AdventureXP-4.2.2-SOURCE.zip` — this tree
+- `dist/packed/AdventureXP-4.2.3.zip` — Vortex Data-root layout (DLL included when present)
+- `dist/packed/AdventureXP-4.2.3-SOURCE.zip` — this tree
 
 ## Host tests
 

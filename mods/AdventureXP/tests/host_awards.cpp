@@ -34,7 +34,7 @@ int main()
 	auto& cfg = Config::Get();
 
 	// Jo: fGlobalXPPercent=2, reading at 100%. Old Scale: 5 * 1.0 * 0.02 = 0.1
-	// (+%.0f toast = +0). Reading/Combat must ignore global.
+	// (toast would print +0). Reading/Combat must ignore global.
 	assert(Near(Awards::Scale(5.f, Category::Reading), 5.f));
 	assert(Near(Awards::Scale(cfg.readingXP, Category::Reading), 5.f));
 	assert(Near(Awards::Scale(10.f, Category::Combat), 10.f));
@@ -94,7 +94,17 @@ int main()
 	assert(Near(cfg.readingXP, 5.f));
 	assert(!Near(Awards::ReadingBaseXP(69, 1.f), cfg.readingXP));
 
+	// Give() toasts lround(amount) with %d and skips Notify when shown < 1.
+	// Pool still gets the fractional amount (e.g. 12 * 0.02 = 0.24 quest stage).
+	assert(static_cast<int>(std::lround(static_cast<double>(12.f * 0.02f))) < 1);
+	assert(static_cast<int>(std::lround(static_cast<double>(0.49f))) < 1);
+	assert(static_cast<int>(std::lround(static_cast<double>(0.5f))) == 1);
+	assert(static_cast<int>(std::lround(static_cast<double>(12.f))) == 12);
+	Awards::Give(12.f * 0.02f, "quest objective");
+	Awards::Give(0.24f, "kill");
+
 	std::cout << "host_awards: Scale ignores global for Reading and Combat only\n";
 	std::cout << "host_awards: ReadingBaseXP sqrt(gold)*fReadingMult\n";
+	std::cout << "host_awards: Give skips toast when lround(amount) < 1\n";
 	return 0;
 }

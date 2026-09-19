@@ -93,8 +93,9 @@ float Scale(float base, Category category)
 	}
 	const float cat = cfg.CategoryWeight(category) / 100.f;
 	// Reading and Combat ignore fGlobalXPPercent. Jo runs global at 2% so
-	// quests/discovery stay slow; 5 reading XP * 1.0 * 0.02 = 0.1, which the
-	// +%.0f toast prints as +0. Category weight still applies.
+	// quests/discovery stay slow; category weight still applies. Give()
+	// still accumulates fractional awards, but skips the toast when
+	// lround(amount) < 1 so "+0 XP" never appears.
 	if (category == Category::Reading || category == Category::Combat) {
 		return base * cat;
 	}
@@ -120,11 +121,17 @@ void Give(float amount, std::string_view reason)
 	const float percent = next > 0.f ? (g_pool / next) * 100.f : 0.f;
 	WritePercentGlobal(percent);
 
+	// Fractional awards (quest stage * low global, tiny kill * low combat) must not toast "+0 XP".
+	const int shown = static_cast<int>(std::lround(static_cast<double>(amount)));
+	if (shown < 1) {
+		return;
+	}
+
 	char buf[160];
 	if (reason.empty()) {
-		std::snprintf(buf, sizeof(buf), "+%.0f XP", amount);
+		std::snprintf(buf, sizeof(buf), "+%d XP", shown);
 	} else {
-		std::snprintf(buf, sizeof(buf), "+%.0f XP (%.*s)", amount, static_cast<int>(reason.size()), reason.data());
+		std::snprintf(buf, sizeof(buf), "+%d XP (%.*s)", shown, static_cast<int>(reason.size()), reason.data());
 	}
 	Notify(buf);
 }
