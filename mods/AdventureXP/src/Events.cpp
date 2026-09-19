@@ -55,12 +55,8 @@ std::optional<std::uint16_t> MarkerTypeFor(RE::BGSLocation* location)
 	}
 	RE::TESObjectREFR* marker = nullptr;
 	if (location->worldLocMarker) {
-		const auto handle = location->worldLocMarker.get();
-		if constexpr (requires { handle.get(); }) {
-			marker = handle.get();
-		} else {
-			marker = handle;
-		}
+		// v8: worldLocMarker.get() is NiPointer<TESObjectREFR>.
+		marker = location->worldLocMarker.get().get();
 	}
 	if (!marker) {
 		return std::nullopt;
@@ -71,6 +67,18 @@ std::optional<std::uint16_t> MarkerTypeFor(RE::BGSLocation* location)
 		}
 	}
 	return std::nullopt;
+}
+
+bool HasKeywordEDID(RE::TESObjectREFR* refr, const char* edid)
+{
+	auto* keyword = RE::TESForm::LookupByEditorID<RE::BGSKeyword>(edid);
+	if (!keyword || !refr) {
+		return false;
+	}
+	if (auto* actor = refr->As<RE::Actor>()) {
+		return actor->HasKeyword(keyword);
+	}
+	return false;
 }
 
 PlaceKind PlaceFor(RE::BGSLocation* location)
@@ -102,8 +110,11 @@ bool ShouldSkipQuest(RE::TESQuest* quest)
 	if (!quest) {
 		return true;
 	}
-	if (cfg.skipHiddenQuests && quest->IsHidden()) {
-		return true;
+	if (cfg.skipHiddenQuests) {
+		const auto* name = quest->GetName();
+		if (!name || name[0] == '\0') {
+			return true;
+		}
 	}
 	if (cfg.skipMiscQuests && KindFor(quest) == QuestKind::Misc) {
 		return true;
@@ -222,13 +233,13 @@ public:
 			}
 		}
 		float bonus = 1.f;
-		if (victim && cfg.undeadCombatBonus > 0.f && victim->HasKeywordString("ActorTypeUndead")) {
+		if (victim && cfg.undeadCombatBonus > 0.f && HasKeywordEDID(victim, "ActorTypeUndead")) {
 			bonus += cfg.undeadCombatBonus / 100.f;
 		}
 		if (cfg.stealthCombatBonus > 0.f && player->IsSneaking()) {
 			bonus += cfg.stealthCombatBonus / 100.f;
 		}
-		if (victim && cfg.beastCombatBonus > 0.f && victim->HasKeywordString("ActorTypeAnimal")) {
+		if (victim && cfg.beastCombatBonus > 0.f && HasKeywordEDID(victim, "ActorTypeAnimal")) {
 			bonus += cfg.beastCombatBonus / 100.f;
 		}
 		Awards::Give(Awards::Scale(base * bonus, Category::Combat), "kill");

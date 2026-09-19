@@ -36,10 +36,16 @@ void Notify(std::string_view text)
 	}
 }
 
-void BumpVanillaLevel(int newLevel)
+void BumpVanillaLevel(int)
 {
-	if (auto* player = RE::PlayerCharacter::GetSingleton()) {
-		player->SetLevel(static_cast<std::uint16_t>(newLevel));
+	auto* player = RE::PlayerCharacter::GetSingleton();
+	if (!player) {
+		return;
+	}
+	// v8 PlayerCharacter has no SetLevel. Advance the vanilla skill
+	// XP page the same way the factory 4.0 DLL did.
+	if (auto* skills = player->GetPlayerRuntimeData().skills) {
+		skills->AdvanceLevel(true);
 	}
 }
 
