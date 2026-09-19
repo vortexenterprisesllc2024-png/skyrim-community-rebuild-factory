@@ -139,7 +139,10 @@ def test_ini_has_every_key() -> None:
     optional = ini_section(text, "Optional")
     assert optional["fReadingMult"] == "1.0"
     assert "fReadingXP" in optional
+    assert optional["fSkillUpXP"] == "4.0"
+    assert optional["fSkillUpLevelScale"] == "10.0"
     assert "floor(sqrt(goldValue) * fReadingMult)" in text
+    assert "fSkillUpLevelScale" in text
     assert "ignores global" in text.lower()
 
 

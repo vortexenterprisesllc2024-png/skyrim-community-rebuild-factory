@@ -261,8 +261,16 @@ public:
 		if (!skill) {
 			return RE::BSEventNotifyControl::kContinue;
 		}
+		int skillLevel = 1;
+		if (auto* player = RE::PlayerCharacter::GetSingleton()) {
+			skillLevel = static_cast<int>(player->GetBaseActorValue(event->actorValue));
+		}
+		if (skillLevel < 1) {
+			skillLevel = 1;
+		}
 		const float weight = cfg.SkillWeight(*skill) / 100.f;
-		Awards::Give(Awards::Scale(cfg.skillUpXP * weight, Category::SkillUp), Key(*skill));
+		const float baseXP = Awards::SkillUpBaseXP(cfg.skillUpXP, skillLevel, cfg.skillUpLevelScale);
+		Awards::Give(Awards::Scale(baseXP * weight, Category::SkillUp), Key(*skill));
 		return RE::BSEventNotifyControl::kContinue;
 	}
 };

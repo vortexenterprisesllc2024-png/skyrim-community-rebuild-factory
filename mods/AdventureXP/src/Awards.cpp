@@ -79,6 +79,13 @@ float ReadingBaseXP(int goldValue, float readingMult)
 	return std::floor(std::sqrt(gold) * readingMult);
 }
 
+float SkillUpBaseXP(float skillUpXP, int skillLevel, float levelScale)
+{
+	const float level = static_cast<float>((std::max)(1, skillLevel));
+	const float scale = (std::max)(1.f, levelScale);
+	return skillUpXP * level / scale;
+}
+
 float Scale(float base, Category category)
 {
 	const auto& cfg = Config::Get();

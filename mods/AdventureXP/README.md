@@ -2,7 +2,7 @@
 
 A **brand-new**, clean-room SKSE plugin for *The Elder Scrolls V: Skyrim Special Edition* (Anniversary Edition **1.7.104.0**). It awards **player level XP** for finishing quests, discovering locations, and clearing dungeons — adventure-first progression rather than grinding a skill.
 
-**Version 4.2.4** keeps the 4.2.1 Reading/Combat ignore-global rule and the 4.2.2 reading formula `floor(sqrt(bookGold) * fReadingMult)`. Quest stage and quest complete also ignore global (`base * categoryWeight/100`) so `iObjectives=12` at `fGlobalXPPercent=2` awards visible `+12 XP`, not `+0`. `bAwardQuestStages` stays on. `Awards::Give` still adds fractional XP to the pool, but suppresses the on-screen toast when `lround(amount) < 1`. Visible toasts print the rounded integer with `%d`. Notes/letters with gold 0 stay 0. Flat `fReadingXP` remains in the INI as an unused legacy key. Skill-ups also ignore global (`fSkillUpXP * per-skill/100 * fSkillUpWeight/100`). Discovery, clears, and crafting still multiply by global. It is not a continuation of anyone else’s 3.x package.
+**Version 4.2.5** keeps the 4.2.1 Reading/Combat ignore-global rule and the 4.2.2 reading formula `floor(sqrt(bookGold) * fReadingMult)`. Quest stage and quest complete also ignore global (`base * categoryWeight/100`) so `iObjectives=12` at `fGlobalXPPercent=2` awards visible `+12 XP`, not `+0`. `bAwardQuestStages` stays on. `Awards::Give` still adds fractional XP to the pool, but suppresses the on-screen toast when `lround(amount) < 1`. Visible toasts print the rounded integer with `%d`. Notes/letters with gold 0 stay 0. Flat `fReadingXP` remains in the INI as an unused legacy key. Skill-ups ignore global and scale with skill rank: `fSkillUpXP * max(1, skillLevel) / max(1, fSkillUpLevelScale)` (default scale 10), then `* (per-skill/100) * (fSkillUpWeight/100)`. With `fSkillUpXP=4` at 100%/100%: skill 10 → +4, 29 → ~+12, 50 → +20, 100 → +40. Discovery, clears, and crafting still multiply by global. It is not a continuation of anyone else’s 3.x package.
 
 Similar Skyrim mods exist. **Every line of code and every asset in this archive is newly written.** Nothing here is copied, forked, or derived from other XP plugins or their source. Credit is not permission. See `CLEANROOM.md`.
 
@@ -10,7 +10,7 @@ Similar Skyrim mods exist. **Every line of code and every asset in this archive 
 
 1. Awards player XP into an adventure pool (quests, discovery, clears, optional combat / reading / crafting / skill-ups).
 2. Play-style presets write category sliders, quest/place amounts, and per-skill weights.
-3. Global XP percent plus per-quest and per-place **absolute XP** (0–200). Per-skill weights are 0–100%. Quest, Reading, Combat, and Skill-up ignore global XP percent and use category weight only. Reading base XP is `floor(sqrt(goldValue) * fReadingMult)` (default mult 1.0). Quest stages stay enabled. Skill-up XP is `fSkillUpXP * (per-skill/100) * (fSkillUpWeight/100)`.
+3. Global XP percent plus per-quest and per-place **absolute XP** (0–200). Per-skill weights are 0–100%. Quest, Reading, Combat, and Skill-up ignore global XP percent and use category weight only. Reading base XP is `floor(sqrt(goldValue) * fReadingMult)` (default mult 1.0). Quest stages stay enabled. Skill-up XP is `fSkillUpXP * max(1, skillLevel) / max(1, fSkillUpLevelScale)` then `* (per-skill/100) * (fSkillUpWeight/100)` (default scale 10).
 4. On-screen XP toast via `DebugNotification` (no third-party HUD SWF).
 5. `AdventureXP_Percent` global in `AdventureXP.esl` for other HUDs.
 6. **SkyUI MCM named AdventureXP** — enable/disable, pick a pack, edit every category. Calls only `AdventureXP.*` natives.
@@ -25,7 +25,7 @@ Similar Skyrim mods exist. **Every line of code and every asset in this archive 
 
 ## Install (Vortex / MO2)
 
-Packed zip name: **`AdventureXP-4.2.4.zip`**. Data-root layout:
+Packed zip name: **`AdventureXP-4.2.5.zip`**. Data-root layout:
 
 ```
 Data/AdventureXP.esl
@@ -154,8 +154,8 @@ python3 scripts/pack.py --allow-missing-dll --source
 
 Writes:
 
-- `dist/packed/AdventureXP-4.2.4.zip` — Vortex Data-root layout (DLL included when present)
-- `dist/packed/AdventureXP-4.2.4-SOURCE.zip` — this tree
+- `dist/packed/AdventureXP-4.2.5.zip` — Vortex Data-root layout (DLL included when present)
+- `dist/packed/AdventureXP-4.2.5-SOURCE.zip` — this tree
 
 ## Host tests
 

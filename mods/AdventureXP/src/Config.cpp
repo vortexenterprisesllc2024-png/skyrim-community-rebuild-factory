@@ -347,6 +347,8 @@ void Config::Load(const std::filesystem::path& path)
 				craftingXP = asFloat(8.f);
 			} else if (EqI(key, "fSkillUpXP")) {
 				skillUpXP = asFloat(4.f);
+			} else if (EqI(key, "fSkillUpLevelScale")) {
+				skillUpLevelScale = asFloat(10.f);
 			}
 		} else if (EqI(section, "Flavor")) {
 			if (EqI(key, "fUndeadCombatBonus")) {
@@ -452,6 +454,7 @@ void Config::Save() const
 	set("Optional", "fReadingMult", num(readingMult));
 	set("Optional", "fCraftingXP", num(craftingXP));
 	set("Optional", "fSkillUpXP", num(skillUpXP));
+	set("Optional", "fSkillUpLevelScale", num(skillUpLevelScale));
 
 	set("Flavor", "fUndeadCombatBonus", num(undeadCombatBonus));
 	set("Flavor", "fStealthCombatBonus", num(stealthCombatBonus));

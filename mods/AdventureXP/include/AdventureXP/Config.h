@@ -45,6 +45,7 @@ public:
 	float readingMult = 1.f;
 	float craftingXP = 8.f;
 	float skillUpXP = 4.f;
+	float skillUpLevelScale = 10.f;
 
 	float undeadCombatBonus = 0.f;
 	float stealthCombatBonus = 0.f;
