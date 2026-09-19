@@ -1088,4 +1088,13 @@ inline std::optional<SkillKind> SkillFromActorValue(std::int32_t actorValue)
 	}
 }
 
+// PlayerSkills::Data::skills[] index. ActorValue 6..23 == OneHanded..Enchanting.
+inline std::optional<std::size_t> SkillDataIndexFromActorValue(std::int32_t actorValue)
+{
+	if (actorValue < 6 || actorValue > 23) {
+		return std::nullopt;
+	}
+	return static_cast<std::size_t>(actorValue - 6);
+}
+
 }  // namespace AdventureXP

@@ -4,6 +4,7 @@
 #include "AdventureXP/Config.h"
 #include "AdventureXP/Types.h"
 
+#include <cmath>
 #include <optional>
 #include <string>
 #include <type_traits>
@@ -247,6 +248,59 @@ public:
 	}
 };
 
+// 4.2.5 crashed here: PlayerCharacter::GetBaseActorValue is a virtual
+// ActorValueOwner call (vtable+0x18). C++ inheritance adjusts `this` with
+// the compile-time AVO offset, which is wrong on 1.7.104 (RAX garbage,
+// RCX="d"). Prefer event->player, then PlayerSkills via GetPlayerRuntimeData
+// (same path Awards::BumpVanillaLevel already uses), then versioned
+// AsActorValueOwner(). If the read fails, award flat fSkillUpXP — no crash.
+RE::PlayerCharacter* EventPlayer(const RE::SkillIncrease::Event* event)
+{
+	auto* singleton = RE::PlayerCharacter::GetSingleton();
+	if (event->player && (!singleton || event->player == singleton)) {
+		return event->player;
+	}
+	return singleton;
+}
+
+bool PlausibleSkillLevel(float raw, int& outLevel)
+{
+	if (!std::isfinite(raw)) {
+		return false;
+	}
+	const int level = static_cast<int>(raw);
+	if (level < 1 || level > 252) {
+		return false;
+	}
+	outLevel = level;
+	return true;
+}
+
+bool TryReadSkillLevel(const RE::SkillIncrease::Event* event, int& outLevel)
+{
+	auto* player = EventPlayer(event);
+	if (!player) {
+		return false;
+	}
+
+	if (auto* skills = player->GetPlayerRuntimeData().skills) {
+		if (auto* data = skills->data) {
+			if (const auto idx = SkillDataIndexFromActorValue(static_cast<std::int32_t>(event->actorValue))) {
+				if (PlausibleSkillLevel(data->skills[*idx].level, outLevel)) {
+					return true;
+				}
+			}
+		}
+	}
+
+	if (auto* avo = player->AsActorValueOwner()) {
+		if (PlausibleSkillLevel(avo->GetBaseActorValue(event->actorValue), outLevel)) {
+			return true;
+		}
+	}
+	return false;
+}
+
 class SkillSink : public RE::BSTEventSink<RE::SkillIncrease::Event> {
 public:
 	RE::BSEventNotifyControl ProcessEvent(
@@ -261,15 +315,12 @@ public:
 		if (!skill) {
 			return RE::BSEventNotifyControl::kContinue;
 		}
-		int skillLevel = 1;
-		if (auto* player = RE::PlayerCharacter::GetSingleton()) {
-			skillLevel = static_cast<int>(player->GetBaseActorValue(event->actorValue));
-		}
-		if (skillLevel < 1) {
-			skillLevel = 1;
+		int skillLevel = 0;
+		float baseXP = cfg.skillUpXP;
+		if (TryReadSkillLevel(event, skillLevel)) {
+			baseXP = Awards::SkillUpBaseXP(cfg.skillUpXP, skillLevel, cfg.skillUpLevelScale);
 		}
 		const float weight = cfg.SkillWeight(*skill) / 100.f;
-		const float baseXP = Awards::SkillUpBaseXP(cfg.skillUpXP, skillLevel, cfg.skillUpLevelScale);
 		Awards::Give(Awards::Scale(baseXP * weight, Category::SkillUp), Key(*skill));
 		return RE::BSEventNotifyControl::kContinue;
 	}

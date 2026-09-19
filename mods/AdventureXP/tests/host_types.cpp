@@ -13,8 +13,8 @@ int main()
 {
 	assert(ADVENTUREXP_VERSION_MAJOR == 4);
 	assert(ADVENTUREXP_VERSION_MINOR == 2);
-	assert(ADVENTUREXP_VERSION_PATCH == 5);
-	assert(std::string_view(ADVENTUREXP_VERSION_STRING) == "4.2.5");
+	assert(ADVENTUREXP_VERSION_PATCH == 6);
+	assert(std::string_view(ADVENTUREXP_VERSION_STRING) == "4.2.6");
 	assert(kPlaceKeys.size() == static_cast<std::size_t>(PlaceKind::Count));
 	assert(kQuestKeys.size() == static_cast<std::size_t>(QuestKind::Count));
 	assert(kSkillKeys.size() == static_cast<std::size_t>(SkillKind::Count));
@@ -61,6 +61,11 @@ int main()
 	assert(SkillFromActorValue(23) == SkillKind::Enchanting);
 	assert(!SkillFromActorValue(5));
 	assert(!SkillFromActorValue(24));
+	assert(SkillDataIndexFromActorValue(6) == 0);
+	assert(SkillDataIndexFromActorValue(18) == 12);
+	assert(SkillDataIndexFromActorValue(23) == 17);
+	assert(!SkillDataIndexFromActorValue(5));
+	assert(!SkillDataIndexFromActorValue(24));
 
 	assert(ParsePlaceKind("Dungeon") == PlaceKind::Default);
 	assert(ParsePlaceKind("Nordic") == PlaceKind::NordicRuin);

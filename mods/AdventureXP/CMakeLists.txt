@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.25)
 
 project(
     AdventureXP
-    VERSION 4.2.5
+    VERSION 4.2.6
     DESCRIPTION "Clean-room SKSE plugin: quest / explore / dungeon-clear player leveling"
     LANGUAGES CXX
 )
