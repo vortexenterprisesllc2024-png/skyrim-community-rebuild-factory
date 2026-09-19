@@ -41,7 +41,8 @@ public:
 
 	float killXP = 2.f;
 	float bossKillXP = 25.f;
-	float readingXP = 5.f;
+	float readingXP = 5.f;  // unused legacy INI key; awards use readingMult
+	float readingMult = 1.f;
 	float craftingXP = 8.f;
 	float skillUpXP = 4.f;
 

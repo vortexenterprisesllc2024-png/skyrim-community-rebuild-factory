@@ -270,14 +270,19 @@ public:
 class BookSink : public RE::BSTEventSink<RE::BooksRead::Event> {
 public:
 	RE::BSEventNotifyControl ProcessEvent(
-		const RE::BooksRead::Event*,
+		const RE::BooksRead::Event* event,
 		RE::BSTEventSource<RE::BooksRead::Event>*) override
 	{
 		auto& cfg = Config::Get();
-		if (!cfg.enabled || !cfg.awardReading) {
+		if (!event || !cfg.enabled || !cfg.awardReading) {
 			return RE::BSEventNotifyControl::kContinue;
 		}
-		Awards::Give(Awards::Scale(cfg.readingXP, Category::Reading), "reading");
+		auto* book = event->book;
+		if (!book) {
+			return RE::BSEventNotifyControl::kContinue;
+		}
+		const float baseXP = Awards::ReadingBaseXP(book->GetGoldValue(), cfg.readingMult);
+		Awards::Give(Awards::Scale(baseXP, Category::Reading), "reading");
 		return RE::BSEventNotifyControl::kContinue;
 	}
 };

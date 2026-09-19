@@ -136,6 +136,11 @@ def test_ini_has_every_key() -> None:
         assert f"f{key}" in skills, key
         weight = float(skills[f"f{key}"])
         assert 0 <= weight <= 100, key
+    optional = ini_section(text, "Optional")
+    assert optional["fReadingMult"] == "1.0"
+    assert "fReadingXP" in optional
+    assert "floor(sqrt(goldValue) * fReadingMult)" in text
+    assert "ignores global" in text.lower()
 
 
 def test_types_and_docs() -> None:

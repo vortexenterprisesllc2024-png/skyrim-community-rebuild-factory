@@ -1,4 +1,4 @@
-# AdventureXP 4.2.1 factory wrapper.
+# AdventureXP 4.2.2 factory wrapper.
 # Private repo vortexenterprisesllc2024-png/AdventureXP could not be created
 # (GitHub App token lacks createRepository). Source lives at mods/AdventureXP/.
 # GitHub only loads workflows from the repo-root .github/workflows/, so this
@@ -145,8 +145,8 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: AdventureXP-4.2.1
+          name: AdventureXP-4.2.2
           path: |
-            mods/AdventureXP/dist/packed/AdventureXP-4.2.1.zip
-            mods/AdventureXP/dist/packed/AdventureXP-4.2.1-SOURCE.zip
+            mods/AdventureXP/dist/packed/AdventureXP-4.2.2.zip
+            mods/AdventureXP/dist/packed/AdventureXP-4.2.2-SOURCE.zip
           if-no-files-found: error

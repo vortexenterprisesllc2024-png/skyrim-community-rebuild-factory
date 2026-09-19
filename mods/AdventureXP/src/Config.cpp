@@ -341,6 +341,8 @@ void Config::Load(const std::filesystem::path& path)
 				bossKillXP = asFloat(25.f);
 			} else if (EqI(key, "fReadingXP")) {
 				readingXP = asFloat(5.f);
+			} else if (EqI(key, "fReadingMult")) {
+				readingMult = asFloat(1.f);
 			} else if (EqI(key, "fCraftingXP")) {
 				craftingXP = asFloat(8.f);
 			} else if (EqI(key, "fSkillUpXP")) {
@@ -447,6 +449,7 @@ void Config::Save() const
 	set("Optional", "fKillXP", num(killXP));
 	set("Optional", "fBossKillXP", num(bossKillXP));
 	set("Optional", "fReadingXP", num(readingXP));
+	set("Optional", "fReadingMult", num(readingMult));
 	set("Optional", "fCraftingXP", num(craftingXP));
 	set("Optional", "fSkillUpXP", num(skillUpXP));
 
