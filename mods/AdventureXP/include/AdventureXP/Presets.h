@@ -1,12 +1,15 @@
 #pragma once
 
 // Play-style packs. Header-only so host tests and the SKSE plugin share one
-// table. MCM (phase 2) should call ApplyPack() / Papyrus ApplyPreset() — the
-// same function INI load uses. Newly written; not derived from any other mod.
+// table. ApplyPreset writes category + quest-type + place-type scales.
+// Newly written; not derived from any other mod.
+//
+// Design: each pack pays well for its fantasy and near-zero for what fights it.
+
+#include "AdventureXP/Types.h"
 
 #include <array>
 #include <cstddef>
-#include <cstring>
 #include <string_view>
 
 namespace AdventureXP
@@ -40,115 +43,163 @@ namespace AdventureXP
         const char* blurb;
         CategoryWeights weights;
         PackFlavor flavor;
+        QuestTypeWeights questTypes;
+        PlaceTypeWeights placeTypes;
     };
 
-    // Adventurer + the requested fantasies. Weights are live sliders (0–300),
-    // not labels: a Thief pack really boosts discovery/skill-ups and cuts clears.
+    // QuestTypeWeights: main, guild, daedric, side, misc, civilWar, dlc, other
+    // PlaceTypeWeights: def, city, dungeon, cave, nordic, dwemer, fort, camp, dragon, mine
+
     inline constexpr std::array kPlayStylePacks{
+        // Adventurer — balanced road life; no dump stats
         PlayStylePack{
             "adventurer",
             "Adventurer",
-            "EverQuest-style default: quests, discovery, and clears carry the level.",
+            "Quests, discovery, and clears carry the level. Optional sources stay off.",
             CategoryWeights{ 100.0f, 100.0f, 100.0f, 0.0f, 0.0f, 0.0f, 0.0f },
             PackFlavor{ 1.5f, false, 0.0f, 0.0f, 0.0f },
+            QuestTypeWeights{ 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f },
+            PlaceTypeWeights{ 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f },
         },
+        // Vigilant — Stendarr: barrows/undead yes; Daedric never
         PlayStylePack{
             "vigilant",
             "Vigilant",
-            "Stendarr's hunt: barrow clears, undead steel, temple quests, and scripture.",
-            CategoryWeights{ 125.0f, 70.0f, 145.0f, 95.0f, 85.0f, 20.0f, 35.0f },
-            PackFlavor{ 1.3f, false, 60.0f, 0.0f, 0.0f },
+            "Pays: barrow clears, undead, temple work, scripture. Denies: Daedric.",
+            CategoryWeights{ 100.0f, 55.0f, 100.0f, 85.0f, 75.0f, 10.0f, 25.0f },
+            PackFlavor{ 1.35f, true, 80.0f, 0.0f, 0.0f },
+            QuestTypeWeights{ 100.0f, 35.0f, 0.0f, 85.0f, 15.0f, 40.0f, 70.0f, 40.0f },
+            PlaceTypeWeights{ 50.0f, 25.0f, 90.0f, 95.0f, 100.0f, 70.0f, 55.0f, 30.0f, 90.0f, 45.0f },
         },
+        // Conjurer (id summoner) — College study; minions fight
         PlayStylePack{
             "summoner",
-            "Summoner",
-            "Grimoires and ranks in the schools; minions fight, you study.",
-            CategoryWeights{ 90.0f, 65.0f, 75.0f, 25.0f, 145.0f, 45.0f, 90.0f },
-            PackFlavor{ 1.2f, true, 0.0f, 0.0f, 0.0f },
+            "Conjurer",
+            "Pays: College, reading, skill-ups. Denies: open war and heavy clears.",
+            CategoryWeights{ 70.0f, 45.0f, 35.0f, 15.0f, 100.0f, 40.0f, 90.0f },
+            PackFlavor{ 1.15f, true, 0.0f, 0.0f, 0.0f },
+            QuestTypeWeights{ 60.0f, 100.0f, 40.0f, 50.0f, 20.0f, 10.0f, 55.0f, 40.0f },
+            PlaceTypeWeights{ 40.0f, 70.0f, 40.0f, 35.0f, 30.0f, 50.0f, 20.0f, 15.0f, 25.0f, 20.0f },
         },
+        // Thief — markers and guild; not a soldier
         PlayStylePack{
             "thief",
             "Thief",
-            "Map markers, locked doors, and light fingers over pitched battles.",
-            CategoryWeights{ 75.0f, 155.0f, 45.0f, 40.0f, 20.0f, 35.0f, 120.0f },
-            PackFlavor{ 1.1f, false, 0.0f, 45.0f, 0.0f },
+            "Pays: discovery, Thieves/guild work, skill-ups. Denies: Civil War, big clears.",
+            CategoryWeights{ 55.0f, 100.0f, 20.0f, 35.0f, 10.0f, 30.0f, 95.0f },
+            PackFlavor{ 1.05f, false, 0.0f, 55.0f, 0.0f },
+            QuestTypeWeights{ 35.0f, 100.0f, 25.0f, 70.0f, 80.0f, 5.0f, 40.0f, 50.0f },
+            PlaceTypeWeights{ 60.0f, 100.0f, 50.0f, 55.0f, 40.0f, 45.0f, 35.0f, 30.0f, 15.0f, 40.0f },
         },
+        // Assassin — contracts and quiet steel
         PlayStylePack{
             "assassin",
             "Assassin",
-            "Contracts and quiet kills. Little sightseeing, less scholarship.",
-            CategoryWeights{ 85.0f, 55.0f, 70.0f, 150.0f, 10.0f, 10.0f, 95.0f },
-            PackFlavor{ 1.2f, true, 0.0f, 85.0f, 0.0f },
+            "Pays: Brotherhood-style guild, stealth kills. Denies: tourism and books.",
+            CategoryWeights{ 60.0f, 30.0f, 45.0f, 100.0f, 0.0f, 5.0f, 70.0f },
+            PackFlavor{ 1.1f, true, 0.0f, 90.0f, 0.0f },
+            QuestTypeWeights{ 40.0f, 100.0f, 50.0f, 55.0f, 70.0f, 15.0f, 45.0f, 40.0f },
+            PlaceTypeWeights{ 40.0f, 70.0f, 60.0f, 50.0f, 55.0f, 40.0f, 50.0f, 45.0f, 30.0f, 35.0f },
         },
+        // Paladin — oaths and cleansing; rejects Daedra
         PlayStylePack{
             "paladin",
             "Paladin",
-            "Oaths, main quests, and cleansing evil from the dark places.",
-            CategoryWeights{ 145.0f, 80.0f, 135.0f, 105.0f, 75.0f, 30.0f, 40.0f },
-            PackFlavor{ 1.7f, false, 45.0f, 0.0f, 0.0f },
+            "Pays: Main quest, clears, undead. Denies: Daedric, thieves, Brotherhood.",
+            CategoryWeights{ 100.0f, 50.0f, 100.0f, 90.0f, 60.0f, 20.0f, 30.0f },
+            PackFlavor{ 1.7f, true, 70.0f, 0.0f, 0.0f },
+            QuestTypeWeights{ 100.0f, 25.0f, 0.0f, 75.0f, 10.0f, 55.0f, 80.0f, 35.0f },
+            PlaceTypeWeights{ 45.0f, 40.0f, 95.0f, 90.0f, 100.0f, 75.0f, 70.0f, 25.0f, 100.0f, 40.0f },
         },
+        // Warrior — storm the hold; books are for the wounded
         PlayStylePack{
             "warrior",
             "Warrior",
-            "Hold-storming and the forge. Books are for the wounded.",
-            CategoryWeights{ 80.0f, 70.0f, 145.0f, 155.0f, 10.0f, 70.0f, 75.0f },
+            "Pays: clears, combat, forge. Denies: reading and College life.",
+            CategoryWeights{ 50.0f, 40.0f, 100.0f, 100.0f, 0.0f, 65.0f, 55.0f },
             PackFlavor{ 1.2f, true, 0.0f, 0.0f, 0.0f },
+            QuestTypeWeights{ 70.0f, 55.0f, 30.0f, 50.0f, 15.0f, 90.0f, 60.0f, 40.0f },
+            PlaceTypeWeights{ 50.0f, 30.0f, 100.0f, 80.0f, 90.0f, 85.0f, 100.0f, 70.0f, 100.0f, 60.0f },
         },
+        // Mage — College and grimoires
         PlayStylePack{
             "mage",
             "Mage",
-            "College work: reading, enchanting, and school skill-ups.",
-            CategoryWeights{ 95.0f, 70.0f, 55.0f, 35.0f, 165.0f, 90.0f, 130.0f },
-            PackFlavor{ 1.3f, false, 0.0f, 0.0f, 0.0f },
+            "Pays: College/guild, reading, skill-ups, enchanting. Denies: front-line clears.",
+            CategoryWeights{ 75.0f, 40.0f, 25.0f, 20.0f, 100.0f, 85.0f, 100.0f },
+            PackFlavor{ 1.25f, false, 0.0f, 0.0f, 0.0f },
+            QuestTypeWeights{ 55.0f, 100.0f, 70.0f, 45.0f, 25.0f, 10.0f, 65.0f, 40.0f },
+            PlaceTypeWeights{ 40.0f, 80.0f, 35.0f, 30.0f, 25.0f, 70.0f, 20.0f, 15.0f, 30.0f, 25.0f },
         },
+        // Ranger — the map is the quest
         PlayStylePack{
             "ranger",
             "Ranger",
-            "The map is the quest. Trails, camps, and the long bow.",
-            CategoryWeights{ 80.0f, 165.0f, 95.0f, 115.0f, 30.0f, 40.0f, 65.0f },
-            PackFlavor{ 1.1f, true, 0.0f, 15.0f, 20.0f },
+            "Pays: discovery, camps, wilderness, hunting. Denies: city busywork.",
+            CategoryWeights{ 45.0f, 100.0f, 70.0f, 80.0f, 15.0f, 25.0f, 50.0f },
+            PackFlavor{ 1.05f, true, 0.0f, 20.0f, 25.0f },
+            QuestTypeWeights{ 40.0f, 30.0f, 20.0f, 70.0f, 25.0f, 35.0f, 50.0f, 45.0f },
+            PlaceTypeWeights{ 70.0f, 15.0f, 60.0f, 90.0f, 75.0f, 40.0f, 55.0f, 100.0f, 85.0f, 70.0f },
         },
+        // Bard — stories and the road
         PlayStylePack{
             "bard",
             "Bard",
-            "Stories, songs, and the road. Speech skill-ups and side tales.",
-            CategoryWeights{ 135.0f, 125.0f, 40.0f, 30.0f, 110.0f, 25.0f, 140.0f },
+            "Pays: side tales, discovery, speech skill-ups. Denies: dungeon grinding.",
+            CategoryWeights{ 90.0f, 95.0f, 15.0f, 15.0f, 80.0f, 15.0f, 100.0f },
             PackFlavor{ 1.4f, false, 0.0f, 0.0f, 0.0f },
+            QuestTypeWeights{ 70.0f, 40.0f, 35.0f, 100.0f, 90.0f, 30.0f, 55.0f, 70.0f },
+            PlaceTypeWeights{ 80.0f, 100.0f, 25.0f, 30.0f, 35.0f, 30.0f, 25.0f, 50.0f, 20.0f, 25.0f },
         },
+        // Merchant — deals not blood
         PlayStylePack{
             "merchant",
             "Merchant",
-            "Deals, craft, and jobs. Combat is a failed negotiation.",
-            CategoryWeights{ 120.0f, 95.0f, 25.0f, 10.0f, 55.0f, 150.0f, 145.0f },
-            PackFlavor{ 1.1f, false, 0.0f, 0.0f, 0.0f },
+            "Pays: craft, skill-ups, jobs. Denies: combat and clears.",
+            CategoryWeights{ 70.0f, 55.0f, 5.0f, 0.0f, 35.0f, 100.0f, 100.0f },
+            PackFlavor{ 1.05f, false, 0.0f, 0.0f, 0.0f },
+            QuestTypeWeights{ 40.0f, 35.0f, 15.0f, 60.0f, 100.0f, 10.0f, 40.0f, 55.0f },
+            PlaceTypeWeights{ 70.0f, 100.0f, 10.0f, 15.0f, 10.0f, 20.0f, 15.0f, 20.0f, 5.0f, 40.0f },
         },
+        // Summoner (id necromancer) — tombs and treatises; Jo display name
         PlayStylePack{
             "necromancer",
-            "Necromancer",
-            "Tombs, treatises, and the dead as both subject and workforce.",
-            CategoryWeights{ 70.0f, 80.0f, 155.0f, 75.0f, 155.0f, 95.0f, 105.0f },
-            PackFlavor{ 1.2f, true, 35.0f, 0.0f, 0.0f },
+            "Summoner",
+            "Pays: tomb clears, reading, craft. Denies: sunny tourism and Civil War.",
+            CategoryWeights{ 45.0f, 50.0f, 100.0f, 40.0f, 100.0f, 80.0f, 85.0f },
+            PackFlavor{ 1.15f, true, 40.0f, 0.0f, 0.0f },
+            QuestTypeWeights{ 35.0f, 70.0f, 85.0f, 40.0f, 20.0f, 5.0f, 55.0f, 45.0f },
+            PlaceTypeWeights{ 40.0f, 20.0f, 90.0f, 95.0f, 100.0f, 80.0f, 40.0f, 25.0f, 50.0f, 35.0f },
         },
+        // Beastblood — the hunt
         PlayStylePack{
             "beastblood",
             "Beastblood",
-            "The hunt. Clears and kills; books and benches can wait.",
-            CategoryWeights{ 50.0f, 90.0f, 130.0f, 165.0f, 0.0f, 10.0f, 40.0f },
-            PackFlavor{ 1.0f, true, 0.0f, 0.0f, 55.0f },
+            "Pays: kills, clears, the hunt. Denies: books and benches.",
+            CategoryWeights{ 25.0f, 60.0f, 95.0f, 100.0f, 0.0f, 5.0f, 20.0f },
+            PackFlavor{ 1.0f, true, 0.0f, 0.0f, 70.0f },
+            QuestTypeWeights{ 20.0f, 25.0f, 30.0f, 40.0f, 15.0f, 35.0f, 40.0f, 30.0f },
+            PlaceTypeWeights{ 55.0f, 10.0f, 80.0f, 90.0f, 70.0f, 40.0f, 65.0f, 100.0f, 85.0f, 50.0f },
         },
+        // Spellsword — steel and school
         PlayStylePack{
             "spellsword",
             "Spellsword",
-            "Steel and school in the same breath. Balanced war-mage diet.",
-            CategoryWeights{ 105.0f, 80.0f, 115.0f, 115.0f, 85.0f, 55.0f, 110.0f },
-            PackFlavor{ 1.4f, false, 0.0f, 0.0f, 0.0f },
+            "Pays: balanced war-mage diet across combat, clears, and College.",
+            CategoryWeights{ 80.0f, 55.0f, 85.0f, 90.0f, 70.0f, 45.0f, 85.0f },
+            PackFlavor{ 1.35f, false, 0.0f, 0.0f, 0.0f },
+            QuestTypeWeights{ 85.0f, 85.0f, 50.0f, 60.0f, 30.0f, 50.0f, 70.0f, 50.0f },
+            PlaceTypeWeights{ 55.0f, 50.0f, 85.0f, 75.0f, 80.0f, 70.0f, 75.0f, 45.0f, 85.0f, 50.0f },
         },
+        // Monk — pilgrimage and restraint
         PlayStylePack{
             "monk",
             "Monk",
-            "Discipline: pilgrimage, training, and restraint in the kill.",
-            CategoryWeights{ 105.0f, 115.0f, 65.0f, 45.0f, 95.0f, 0.0f, 150.0f },
-            PackFlavor{ 1.3f, true, 0.0f, 0.0f, 0.0f },
+            "Pays: pilgrimage, training, restraint. Denies: crime guilds and crafting greed.",
+            CategoryWeights{ 70.0f, 90.0f, 40.0f, 25.0f, 70.0f, 0.0f, 100.0f },
+            PackFlavor{ 1.25f, true, 0.0f, 0.0f, 0.0f },
+            QuestTypeWeights{ 75.0f, 20.0f, 15.0f, 70.0f, 25.0f, 20.0f, 55.0f, 50.0f },
+            PlaceTypeWeights{ 70.0f, 40.0f, 45.0f, 60.0f, 55.0f, 40.0f, 35.0f, 50.0f, 40.0f, 35.0f },
         },
     };
 

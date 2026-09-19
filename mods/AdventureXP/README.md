@@ -29,12 +29,12 @@ Set `sPreset` in `AdventureXP.ini` to one of these ids (case-insensitive). Each 
 
 | Pack | What actually changes |
 | --- | --- |
-| **Adventurer** | Default EverQuest-style diet: quests, discovery, clears. Combat/reading/training off. |
-| **Vigilant** | Clears and undead kills up; scripture (reading); discovery down. |
-| **Summoner** | Reading and school skill-ups up; you fight less. |
-| **Thief** | Discovery and stealth skill-ups up; clears down; sneak-kill bonus. |
-| **Assassin** | Combat way up, reading/crafting down; large sneak-kill bonus. |
-| **Paladin** | Quests and clears up; undead bonus; main-quest multiplier high. |
+| **Adventurer** | Quests, discovery, clears. Optional sources off. Neutral quest/place scales. |
+| **Vigilant** | Barrow clears, undead, temple work, scripture. **Daedric = 0**. |
+| **Conjurer** (`summoner`) | College, reading, skill-ups. Open war and heavy clears down. |
+| **Thief** | Discovery, Thieves/guild work, skill-ups. Civil War and big clears denied. |
+| **Assassin** | Brotherhood-style guild, stealth kills. Tourism and books denied. |
+| **Paladin** | Oaths and cleansing. **Daedric = 0**. Undead bonus. |
 | **Warrior** | Clears, kills, and the forge (crafting / martial skill-ups). |
 | **Mage** | Reading, enchanting/alchemy, and school ranks. |
 | **Ranger** | Discovery first, then bow kills and camps. |

@@ -79,6 +79,11 @@ int main()
     }
     if (const auto* vigilant = FindPack("vigilant")) {
         expect(vigilant->flavor.undeadCombatBonus > 0.0f, "Vigilant undead bonus is mechanical, not a label");
+        expect(vigilant->questTypes.daedric == 0.0f, "Vigilant denies Daedric quest XP");
+    }
+    if (const auto* paladin = FindPack("paladin")) {
+        expect(paladin->questTypes.daedric == 0.0f, "Paladin denies Daedric quest XP");
+        expect(paladin->flavor.undeadCombatBonus > 0.0f, "Paladin undead bonus is mechanical");
     }
     if (const auto* assassin = FindPack("assassin")) {
         expect(assassin->flavor.stealthCombatBonus > 0.0f, "Assassin stealth bonus is mechanical");

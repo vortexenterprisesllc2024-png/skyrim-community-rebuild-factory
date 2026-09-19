@@ -52,6 +52,8 @@ namespace AdventureXP
         presetId = pack->id;
         weights = pack->weights;
         flavor = pack->flavor;
+        questTypes = pack->questTypes;
+        placeTypes = pack->placeTypes;
         mainQuestMultiplier = pack->flavor.mainQuestMultiplier;
         skipMiscQuests = pack->flavor.skipMiscQuests;
         return true;
