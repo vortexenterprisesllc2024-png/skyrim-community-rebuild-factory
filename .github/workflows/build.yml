@@ -1,0 +1,152 @@
+# AdventureXP 4.2.4 factory wrapper.
+# Private repo vortexenterprisesllc2024-png/AdventureXP could not be created
+# (GitHub App token lacks createRepository). Source lives at mods/AdventureXP/.
+# GitHub only loads workflows from the repo-root .github/workflows/, so this
+# file sets working-directory and artifact paths accordingly.
+name: build
+
+on:
+  push:
+    paths:
+      - "mods/AdventureXP/**"
+      - ".github/workflows/build.yml"
+  pull_request:
+    paths:
+      - "mods/AdventureXP/**"
+      - ".github/workflows/build.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: adventurexp-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  host-tests:
+    name: Host tests (math, ESL, zip layout)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mods/AdventureXP
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Configure host tests
+        run: cmake --preset host-tests
+      - name: Build and run math tests
+        run: |
+          cmake --build --preset host-tests
+          ctest --preset host-tests --output-on-failure
+      - name: Generate ESL and validate pack layout
+        run: |
+          python3 scripts/generate_esl.py
+          python3 tests/test_esl.py
+          python3 tests/test_schema.py
+          python3 tests/test_mcm_scripts.py
+          python3 tests/test_presets.py
+          python3 tests/test_pack_layout.py
+          python3 scripts/assert-cleanroom.py
+
+  windows-msvc:
+    name: Windows MSVC AdventureXP.dll
+    # Factory note: windows-latest is VS 2026 (no VS 2022 instance).
+    # CommonLibSSE-NG / MSVC static runtime builds use windows-2022.
+    #
+    # Path quirk: building under
+    #   D:/a/skyrim-community-rebuild-factory/skyrim-community-rebuild-factory/mods/AdventureXP/...
+    # exceeds CMake's 250-char CMAKE_OBJECT_PATH_MAX (fatal C1083 on vcpkg TryCompile).
+    # Stage the tree at C:\axp and keep vcpkg at C:\vp.
+    # ilammy/msvc-dev-cmd overwrites VCPKG_ROOT to the VS-bundled copy; re-pin after it.
+    runs-on: windows-2022
+    env:
+      VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}\vcpkg-bincache
+      VCPKG_FEATURE_FLAGS: manifests,versions,binarycaching
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Ninja
+        run: choco install ninja -y
+
+      - name: Restore vcpkg binary cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}\vcpkg-bincache
+          key: vcpkg-bincache-adventurexp-${{ hashFiles('mods/AdventureXP/vcpkg.json') }}
+          restore-keys: |
+            vcpkg-bincache-adventurexp-
+
+      - name: Stage source at C:\axp
+        run: |
+          git config --global core.longpaths true
+          if (Test-Path C:\axp) { Remove-Item -Recurse -Force C:\axp }
+          New-Item -ItemType Directory -Force -Path C:\axp | Out-Null
+          Copy-Item -Path "$env:GITHUB_WORKSPACE\mods\AdventureXP\*" -Destination C:\axp -Recurse -Force
+          Get-ChildItem C:\axp | Select-Object -ExpandProperty Name
+          if (-not (Test-Path C:\axp\CMakeLists.txt)) { throw "C:\\axp staging missing CMakeLists.txt" }
+
+      - name: Clone vcpkg
+        run: |
+          New-Item -ItemType Directory -Force -Path "$env:VCPKG_DEFAULT_BINARY_CACHE" | Out-Null
+          $root = "C:\vp"
+          # Full clone: a shallow vcpkg cannot read-tree port git objects
+          # from the manifest builtin-baseline (nlohmann-json failed that way).
+          if (-not (Test-Path "$root\.git")) {
+            git clone https://github.com/microsoft/vcpkg.git $root
+          }
+          git -C $root fetch origin ee12231b20c95013c6638d845d04c91559a1d1ff
+          git -C $root checkout ee12231b20c95013c6638d845d04c91559a1d1ff
+          if (-not (Test-Path "$root\vcpkg.exe")) {
+            & "$root\bootstrap-vcpkg.bat" -disableMetrics
+          }
+          echo "VCPKG_ROOT=$root" >> $env:GITHUB_ENV
+          echo "VCPKG_INSTALLATION_ROOT=$root" >> $env:GITHUB_ENV
+
+      - name: MSVC environment
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Configure
+        working-directory: C:\axp
+        run: |
+          $env:VCPKG_ROOT = "C:\vp"
+          $env:VCPKG_INSTALLATION_ROOT = "C:\vp"
+          cmake --preset windows-msvc-release "-DCMAKE_TOOLCHAIN_FILE=C:/vp/scripts/buildsystems/vcpkg.cmake" "-DCMAKE_MAKE_PROGRAM=ninja"
+
+      - name: Build
+        working-directory: C:\axp
+        run: |
+          $env:VCPKG_ROOT = "C:\vp"
+          cmake --build --preset windows-msvc-release --parallel
+
+      - name: Pack Vortex zip
+        working-directory: C:\axp
+        run: |
+          python scripts/generate_esl.py
+          python scripts/pack.py --source --dll C:\axp\build\windows-msvc-release\AdventureXP.dll
+
+      - name: Confirm AdventureXP.dll in layout zip
+        working-directory: C:\axp
+        run: |
+          $ver = (Get-Content VERSION -Raw).Trim()
+          python -c "import zipfile,sys; names=zipfile.ZipFile(rf'dist/packed/AdventureXP-{sys.argv[1]}.zip').namelist(); print(chr(10).join(names)); assert 'SKSE/Plugins/AdventureXP.dll' in names, names" $ver
+
+      - name: Copy packed zips into workspace
+        run: |
+          $ver = (Get-Content C:\axp\VERSION -Raw).Trim()
+          New-Item -ItemType Directory -Force -Path "$env:GITHUB_WORKSPACE\mods\AdventureXP\dist\packed" | Out-Null
+          Copy-Item "C:\axp\dist\packed\AdventureXP-$ver.zip" "$env:GITHUB_WORKSPACE\mods\AdventureXP\dist\packed\"
+          Copy-Item "C:\axp\dist\packed\AdventureXP-$ver-SOURCE.zip" "$env:GITHUB_WORKSPACE\mods\AdventureXP\dist\packed\"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: AdventureXP-4.2.4
+          path: |
+            mods/AdventureXP/dist/packed/AdventureXP-4.2.4.zip
+            mods/AdventureXP/dist/packed/AdventureXP-4.2.4-SOURCE.zip
+          if-no-files-found: error
