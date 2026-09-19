@@ -604,7 +604,7 @@ event OnOptionHighlight(int a_option)
 	elseIf a_option == _oidKilling
 		SetInfoText("Allow XP from kills. Combat slider is ignored while this is off.")
 	elseIf a_option == _oidReading
-		SetInfoText("Allow XP from books. Reading slider is ignored while this is off.")
+		SetInfoText("Allow XP from books. Award is floor(sqrt(book gold) * fReadingMult), then reading weight. Ignores global.")
 	else
 		int cat = FindOid(_catOids, a_option)
 		if cat >= 0

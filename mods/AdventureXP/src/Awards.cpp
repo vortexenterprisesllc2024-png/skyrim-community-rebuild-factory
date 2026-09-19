@@ -3,6 +3,7 @@
 #include "AdventureXP/Config.h"
 #include "AdventureXP/Version.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstdio>
 
@@ -70,6 +71,12 @@ float ThresholdForLevel(int level)
 	const auto& cfg = Config::Get();
 	const float lv = static_cast<float>((std::max)(1, level));
 	return cfg.xpBase + cfg.xpPerLevel * std::pow(lv, cfg.xpExponent);
+}
+
+float ReadingBaseXP(int goldValue, float readingMult)
+{
+	const float gold = (std::max)(0.f, static_cast<float>(goldValue));
+	return std::floor(std::sqrt(gold) * readingMult);
 }
 
 float Scale(float base, Category category)

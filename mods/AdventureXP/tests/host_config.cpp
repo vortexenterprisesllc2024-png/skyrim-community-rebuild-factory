@@ -23,6 +23,7 @@ int main()
 	assert(cfg.ClearXP(PlaceKind::Cave) == DefaultClearXP(PlaceKind::Cave));
 	assert(cfg.SkillWeight(SkillKind::Illusion) == 100.f);
 	assert(cfg.SkillWeight(SkillKind::Sneak) == 100.f);
+	assert(cfg.readingMult == 1.f);
 
 	cfg.SetQuestXP(QuestKind::College, 77);
 	cfg.SetDiscoveryXP(PlaceKind::Mine, 41);
@@ -31,6 +32,7 @@ int main()
 	cfg.SetSkillWeight(SkillKind::Illusion, 25.f);
 	cfg.SetSkillWeight(SkillKind::Sneak, 0.f);
 	cfg.awardKilling = true;
+	cfg.readingMult = 1.5f;
 	cfg.Save();
 
 	Config again;
@@ -42,6 +44,7 @@ int main()
 	assert(again.SkillWeight(SkillKind::Illusion) == 25.f);
 	assert(again.SkillWeight(SkillKind::Sneak) == 0.f);
 	assert(again.SkillWeight(SkillKind::Destruction) == 100.f);
+	assert(again.readingMult == 1.5f);
 
 	assert(Awards::Scale(100.f, Category::Quest) >= 0.f);
 	cfg.enabled = false;

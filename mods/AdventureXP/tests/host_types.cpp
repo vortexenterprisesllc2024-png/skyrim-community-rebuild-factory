@@ -4,6 +4,7 @@
 #include <cassert>
 #include <iostream>
 #include <string>
+#include <string_view>
 #include <vector>
 
 using namespace AdventureXP;
@@ -12,6 +13,8 @@ int main()
 {
 	assert(ADVENTUREXP_VERSION_MAJOR == 4);
 	assert(ADVENTUREXP_VERSION_MINOR == 2);
+	assert(ADVENTUREXP_VERSION_PATCH == 2);
+	assert(std::string_view(ADVENTUREXP_VERSION_STRING) == "4.2.2");
 	assert(kPlaceKeys.size() == static_cast<std::size_t>(PlaceKind::Count));
 	assert(kQuestKeys.size() == static_cast<std::size_t>(QuestKind::Count));
 	assert(kSkillKeys.size() == static_cast<std::size_t>(SkillKind::Count));
