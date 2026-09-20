@@ -118,6 +118,9 @@ namespace
         case SKSE::MessagingInterface::kPostLoadGame:
             // Player exists now. Sync the award pool to the live level /
             // vanilla XP bar so a level-24 load does not keep g_level=1.
+            // Re-snapshot quest objectives from the loaded save so already
+            // displayed journal lines do not count as stage advances.
+            AdventureXP::Events::RememberQuestObjectiveBaseline();
             AdventureXP::Awards::SyncFromPlayer();
             logger::info(
                 "Synced award pool from player (level {}, pool {})",

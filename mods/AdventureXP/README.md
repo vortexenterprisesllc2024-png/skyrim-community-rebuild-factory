@@ -2,7 +2,7 @@
 
 A **brand-new**, clean-room SKSE plugin for *The Elder Scrolls V: Skyrim Special Edition* (Anniversary Edition **1.7.104.0**). It awards **player level XP** for finishing quests, discovering locations, and clearing dungeons — adventure-first progression rather than grinding a skill.
 
-**Version 4.2.10** disconnects `fGlobalXPPercent` from every XP Sources slider (Quest, Discovery, Clear, Combat, Reading, Crafting, SkillUp). Awards are `base * (categoryWeight/100)` only. The Global slider stays in the MCM/INI as reserved and unused for awards, so Jo’s live 2% no longer zeros discovery/clears/crafting. Toast suppress for `lround(amount) < 1` stays. 4.2.9 discovery toast fix, 4.2.8 Wizard + vanilla XP-bar sync, 4.2.7 Crafter, and the 4.2.6 skill-up crash hotfix stay in. Skill-up level is still read from `SkillIncrease::Event::player` plus `GetPlayerRuntimeData().skills` (or versioned `AsActorValueOwner`). Do **not** call `PlayerCharacter::GetBaseActorValue` — that virtual AVO call crashed 1.7.104 (`call [rax+0x18]`). If the AV read fails, the award falls back to flat `fSkillUpXP` (no crash). Linear scale is unchanged: `fSkillUpXP * max(1, skillLevel) / max(1, fSkillUpLevelScale)` (default 10), then category/per-skill weights. It is not a continuation of anyone else’s 3.x package.
+**Version 4.2.11** awards Quest Objectives XP only when a stage change is tied to a player-visible journal beat (journal log text for that stage, or an objective that newly displays / completes in the journal). Silent script stages — the 7000 Steps climb under Way of the Voice — no longer add XP. `bAwardQuestComplete` is unchanged. `bAwardSilentQuestStages=1` restores the 4.2.10 “every stage != 0” path. 4.2.10 still disconnects `fGlobalXPPercent` from every XP Sources slider (Quest, Discovery, Clear, Combat, Reading, Crafting, SkillUp). Awards are `base * (categoryWeight/100)` only. The Global slider stays in the MCM/INI as reserved and unused for awards, so Jo’s live 2% no longer zeros discovery/clears/crafting. Toast suppress for `lround(amount) < 1` stays. 4.2.9 discovery toast fix, 4.2.8 Wizard + vanilla XP-bar sync, 4.2.7 Crafter, and the 4.2.6 skill-up crash hotfix stay in. Skill-up level is still read from `SkillIncrease::Event::player` plus `GetPlayerRuntimeData().skills` (or versioned `AsActorValueOwner`). Do **not** call `PlayerCharacter::GetBaseActorValue` — that virtual AVO call crashed 1.7.104 (`call [rax+0x18]`). If the AV read fails, the award falls back to flat `fSkillUpXP` (no crash). Linear scale is unchanged: `fSkillUpXP * max(1, skillLevel) / max(1, fSkillUpLevelScale)` (default 10), then category/per-skill weights. It is not a continuation of anyone else’s 3.x package.
 
 Similar Skyrim mods exist. **Every line of code and every asset in this archive is newly written.** Nothing here is copied, forked, or derived from other XP plugins or their source. Credit is not permission. See `CLEANROOM.md`.
 
@@ -10,7 +10,7 @@ Similar Skyrim mods exist. **Every line of code and every asset in this archive 
 
 1. Awards player XP into an adventure pool (quests, discovery, clears, optional combat / reading / crafting / skill-ups).
 2. Play-style presets write category sliders, quest/place amounts, and per-skill weights.
-3. Per-quest and per-place **absolute XP** (0–200). Per-skill weights are 0–100%. Every XP Sources slider (Quest, Discovery, Clear, Combat, Reading, Crafting, Skill-up) ignores `fGlobalXPPercent` and uses category weight only. The Global XP slider is reserved and unused for awards. Reading base XP is `floor(sqrt(goldValue) * fReadingMult)` (default mult 1.0). Quest stages stay enabled. Skill-up XP is `fSkillUpXP * max(1, skillLevel) / max(1, fSkillUpLevelScale)` then `* (per-skill/100) * (fSkillUpWeight/100)` (default scale 10).
+3. Per-quest and per-place **absolute XP** (0–200). Per-skill weights are 0–100%. Every XP Sources slider (Quest, Discovery, Clear, Combat, Reading, Crafting, Skill-up) ignores `fGlobalXPPercent` and uses category weight only. The Global XP slider is reserved and unused for awards. Reading base XP is `floor(sqrt(goldValue) * fReadingMult)` (default mult 1.0). Quest stage XP stays enabled but only for journal-visible advances (`bAwardSilentQuestStages=0`). Skill-up XP is `fSkillUpXP * max(1, skillLevel) / max(1, fSkillUpLevelScale)` then `* (per-skill/100) * (fSkillUpWeight/100)` (default scale 10).
 4. On-screen XP toast via `DebugNotification` (no third-party HUD SWF).
 5. `AdventureXP_Percent` global in `AdventureXP.esl` for other HUDs.
 6. **SkyUI MCM named AdventureXP** — enable/disable, pick a pack, edit every category. Calls only `AdventureXP.*` natives.
@@ -25,7 +25,7 @@ Similar Skyrim mods exist. **Every line of code and every asset in this archive 
 
 ## Install (Vortex / MO2)
 
-Packed zip name: **`AdventureXP-4.2.10.zip`**. Data-root layout:
+Packed zip name: **`AdventureXP-4.2.11.zip`**. Data-root layout:
 
 ```
 Data/AdventureXP.esl
@@ -156,8 +156,8 @@ python3 scripts/pack.py --allow-missing-dll --source
 
 Writes:
 
-- `dist/packed/AdventureXP-4.2.10.zip` — Vortex Data-root layout (DLL included when present)
-- `dist/packed/AdventureXP-4.2.10-SOURCE.zip` — this tree
+- `dist/packed/AdventureXP-4.2.11.zip` — Vortex Data-root layout (DLL included when present)
+- `dist/packed/AdventureXP-4.2.11-SOURCE.zip` — this tree
 
 ## Host tests
 

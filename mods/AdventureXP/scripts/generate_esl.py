@@ -133,7 +133,7 @@ def build_tes4() -> bytes:
             _sub(
                 b"SNAM",
                 _zstr(
-                    "AdventureXP 4.2.10 light plugin - progress global and SkyUI MCM quest. Newly written."
+                    "AdventureXP 4.2.11 light plugin - progress global and SkyUI MCM quest. Newly written."
                 ),
             ),
             _sub(b"MAST", _zstr("Skyrim.esm")),

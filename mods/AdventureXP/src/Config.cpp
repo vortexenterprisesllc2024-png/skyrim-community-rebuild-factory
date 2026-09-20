@@ -300,6 +300,8 @@ void Config::Load(const std::filesystem::path& path)
 				awardQuestStages = asBool();
 			} else if (EqI(key, "bAwardQuestComplete")) {
 				awardQuestComplete = asBool();
+			} else if (EqI(key, "bAwardSilentQuestStages")) {
+				awardSilentQuestStages = asBool();
 			} else if (EqI(key, "bSkipHiddenQuests")) {
 				skipHiddenQuests = asBool();
 			} else if (EqI(key, "bSkipMiscQuests")) {
@@ -433,6 +435,7 @@ void Config::Save() const
 
 	set("Quests", "bAwardQuestStages", awardQuestStages ? "1" : "0");
 	set("Quests", "bAwardQuestComplete", awardQuestComplete ? "1" : "0");
+	set("Quests", "bAwardSilentQuestStages", awardSilentQuestStages ? "1" : "0");
 	set("Quests", "bSkipHiddenQuests", skipHiddenQuests ? "1" : "0");
 	set("Quests", "bSkipMiscQuests", skipMiscQuests ? "1" : "0");
 	set("Quests", "fMainQuestMultiplier", num(mainQuestMultiplier));

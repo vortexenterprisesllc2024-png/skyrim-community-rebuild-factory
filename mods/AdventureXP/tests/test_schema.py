@@ -118,7 +118,11 @@ def test_ini_has_every_key() -> None:
     discovery = ini_section(text, "Discovery")
     clears = ini_section(text, "Clears")
     general = ini_section(text, "General")
+    quest_flags = ini_section(text, "Quests")
     assert general["bShowXPMessages"] in {"0", "1"}
+    assert quest_flags["bAwardQuestStages"] in {"0", "1"}
+    assert quest_flags["bAwardQuestComplete"] in {"0", "1"}
+    assert quest_flags["bAwardSilentQuestStages"] == "0"
     assert general["bAwardKilling"] in {"0", "1"}
     assert general["bAwardReading"] in {"0", "1"}
     for key in QUEST_KEYS:

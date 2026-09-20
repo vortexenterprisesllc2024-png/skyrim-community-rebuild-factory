@@ -10,6 +10,8 @@ g++ -std=c++20 -I include tests/host_awards.cpp src/Config.cpp src/Awards.cpp -o
 /tmp/adventurexp_host_awards
 g++ -std=c++20 -I include tests/host_presets.cpp src/Config.cpp src/Awards.cpp -o /tmp/adventurexp_host_presets
 /tmp/adventurexp_host_presets
+g++ -std=c++20 -I include tests/host_quest_stage.cpp -o /tmp/adventurexp_host_quest_stage
+/tmp/adventurexp_host_quest_stage
 python3 scripts/generate_esl.py
 python3 tests/test_esl.py
 python3 tests/test_mcm_scripts.py

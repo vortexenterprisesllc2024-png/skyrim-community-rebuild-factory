@@ -30,6 +30,7 @@ public:
 
 	bool awardQuestStages = true;
 	bool awardQuestComplete = true;
+	bool awardSilentQuestStages = false;
 	bool skipHiddenQuests = true;
 	bool skipMiscQuests = false;
 	float mainQuestMultiplier = 1.0f;

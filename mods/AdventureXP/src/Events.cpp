@@ -2,17 +2,20 @@
 
 #include "AdventureXP/Awards.h"
 #include "AdventureXP/Config.h"
+#include "AdventureXP/QuestStage.h"
 #include "AdventureXP/Types.h"
 
 #include <cmath>
 #include <optional>
 #include <string>
 #include <type_traits>
+#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
 #ifdef ADVENTUREXP_WITH_GAME
 #	include <RE/Skyrim.h>
+#	include <SKSE/SKSE.h>
 #endif
 
 namespace AdventureXP::Events {
@@ -123,6 +126,282 @@ bool ShouldSkipQuest(RE::TESQuest* quest)
 	return false;
 }
 
+const char* QuestLabel(RE::TESQuest* quest)
+{
+	if (!quest) {
+		return "quest";
+	}
+	if (const char* name = quest->GetName(); name && HasVisibleText(name)) {
+		return name;
+	}
+	if constexpr (requires { quest->GetFullName(); }) {
+		if (const char* full = quest->GetFullName(); full && HasVisibleText(full)) {
+			return full;
+		}
+	}
+	if (const char* edid = quest->GetFormEditorID(); edid && HasVisibleText(edid)) {
+		return edid;
+	}
+	return "quest";
+}
+
+const char* ObjectiveDisplayText(const RE::BGSQuestObjective* obj)
+{
+	if (!obj) {
+		return "";
+	}
+	if constexpr (requires { obj->displayText.c_str(); }) {
+		if (const char* text = obj->displayText.c_str()) {
+			return text;
+		}
+	} else if constexpr (requires { static_cast<const char*>(obj->displayText); }) {
+		if (const char* text = static_cast<const char*>(obj->displayText)) {
+			return text;
+		}
+	}
+	return "";
+}
+
+std::uint8_t ObjectiveStateValue(const RE::BGSQuestObjective* obj)
+{
+	if (!obj) {
+		return static_cast<std::uint8_t>(kObjectiveDormant);
+	}
+	return static_cast<std::uint8_t>(MarkerEnumValue(obj->state));
+}
+
+template <class Item>
+const RE::TESQuestStage* AsQuestStagePtr(Item&& item)
+{
+	using Raw = std::remove_cvref_t<Item>;
+	if constexpr (std::is_pointer_v<Raw>) {
+		return item;
+	} else {
+		return &item;
+	}
+}
+
+template <class List>
+bool StageListHasStartupOrShutdown(List* list, std::uint16_t stage)
+{
+	if (!list) {
+		return false;
+	}
+	for (auto&& item : *list) {
+		const auto* entry = AsQuestStagePtr(item);
+		if (!entry || entry->data.index != stage) {
+			continue;
+		}
+		if constexpr (requires {
+						  entry->data.flags.any(
+							  RE::QUEST_STAGE_DATA::Flag::kStartUpStage,
+							  RE::QUEST_STAGE_DATA::Flag::kShutDownStage);
+					  }) {
+			if (entry->data.flags.any(
+					RE::QUEST_STAGE_DATA::Flag::kStartUpStage,
+					RE::QUEST_STAGE_DATA::Flag::kShutDownStage)) {
+				return true;
+			}
+		} else {
+			const auto raw = static_cast<std::uint8_t>(MarkerEnumValue(entry->data.flags));
+			constexpr auto mask = static_cast<std::uint8_t>(RE::QUEST_STAGE_DATA::Flag::kStartUpStage) |
+				static_cast<std::uint8_t>(RE::QUEST_STAGE_DATA::Flag::kShutDownStage);
+			if ((raw & mask) != 0) {
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+bool IsStartupOrShutdownStage(RE::TESQuest* quest, std::uint16_t stage)
+{
+	if (!quest) {
+		return false;
+	}
+	if (StageListHasStartupOrShutdown(quest->executedStages, stage)) {
+		return true;
+	}
+	if (StageListHasStartupOrShutdown(quest->waitingStages, stage)) {
+		return true;
+	}
+	return false;
+}
+
+bool InstanceJournalMatchesStage(RE::TESQuest* quest, std::uint16_t stage)
+{
+	if (!quest) {
+		return false;
+	}
+	for (auto* inst : quest->instanceData) {
+		if (!inst) {
+			continue;
+		}
+		if (inst->id == quest->currentInstanceID && inst->journalStage == stage &&
+			inst->journalStageItem >= 0) {
+			return true;
+		}
+	}
+	if (quest->instanceData.size() == 1) {
+		if (auto* inst = quest->instanceData[0];
+			inst && inst->journalStage == stage && inst->journalStageItem >= 0) {
+			return true;
+		}
+	}
+	return false;
+}
+
+bool InstanceJournalTextVisible(RE::TESQuest* quest)
+{
+	if (!quest) {
+		return false;
+	}
+	RE::BSString text;
+	quest->GetJournalTextForInstance(text, quest->currentInstanceID);
+	if constexpr (requires { text.c_str(); }) {
+		return HasVisibleText(text.c_str());
+	} else if constexpr (requires { text.data(); }) {
+		return HasVisibleText(text.data());
+	}
+	return false;
+}
+
+using ObjectiveStateMap = std::unordered_map<std::uint16_t, std::uint8_t>;
+std::unordered_map<RE::FormID, ObjectiveStateMap> g_objectiveStates;
+std::unordered_set<std::uint64_t> g_seenStages;
+
+std::uint64_t StageKey(RE::FormID formID, std::uint16_t stage)
+{
+	return (static_cast<std::uint64_t>(formID) << 16) | static_cast<std::uint64_t>(stage);
+}
+
+bool MarkStageSeen(RE::FormID formID, std::uint16_t stage)
+{
+	return g_seenStages.insert(StageKey(formID, stage)).second;
+}
+
+void SnapshotQuestObjectives(RE::TESQuest* quest)
+{
+	if (!quest) {
+		return;
+	}
+	auto& map = g_objectiveStates[quest->GetFormID()];
+	map.clear();
+	for (auto* obj : quest->objectives) {
+		if (!obj) {
+			continue;
+		}
+		map[obj->index] = ObjectiveStateValue(obj);
+	}
+}
+
+void SnapshotEnabledQuests()
+{
+	auto* data = RE::TESDataHandler::GetSingleton();
+	if (!data) {
+		return;
+	}
+	for (auto* quest : data->GetFormArray<RE::TESQuest>()) {
+		if (quest && quest->IsEnabled()) {
+			SnapshotQuestObjectives(quest);
+		}
+	}
+}
+
+struct VisibilityProbe {
+	QuestStageAwardFacts facts;
+	std::string objectiveText;
+};
+
+VisibilityProbe ProbeStageVisibility(RE::TESQuest* quest, std::uint16_t stage)
+{
+	VisibilityProbe probe;
+	probe.facts.stage = stage;
+	if (!quest) {
+		return probe;
+	}
+
+	probe.facts.startupOrShutdown = IsStartupOrShutdownStage(quest, stage);
+	probe.facts.journalMatchesStage = InstanceJournalMatchesStage(quest, stage);
+	probe.facts.journalTextVisible = probe.facts.journalMatchesStage && InstanceJournalTextVisible(quest);
+
+	const auto id = quest->GetFormID();
+	const auto found = g_objectiveStates.find(id);
+	const bool haveSnapshot = found != g_objectiveStates.end();
+	// First sight of a quest (no baseline): do not treat already-displayed
+	// objectives as an advance. Journal text is the only safe signal then.
+	if (haveSnapshot) {
+		for (auto* obj : quest->objectives) {
+			if (!obj) {
+				continue;
+			}
+			const auto current = static_cast<int>(ObjectiveStateValue(obj));
+			const auto text = ObjectiveDisplayText(obj);
+			const bool hasText = HasVisibleText(text);
+			int previous = kObjectiveDormant;
+			if (const auto it = found->second.find(obj->index); it != found->second.end()) {
+				previous = static_cast<int>(it->second);
+			}
+			if (ObjectiveAdvancedVisibly(previous, current, hasText)) {
+				probe.facts.visibleObjectiveAdvanced = true;
+				if (probe.objectiveText.empty() && hasText) {
+					probe.objectiveText.assign(text);
+				}
+			}
+		}
+	}
+
+	SnapshotQuestObjectives(quest);
+	return probe;
+}
+
+void AwardQuestComplete(RE::TESQuest* quest)
+{
+	auto& cfg = Config::Get();
+	if (!cfg.awardQuestComplete || !quest || !quest->IsCompleted()) {
+		return;
+	}
+	const auto kind = KindFor(quest);
+	float amount = static_cast<float>(cfg.QuestXP(kind));
+	if (kind == QuestKind::Main) {
+		amount *= cfg.mainQuestMultiplier;
+	}
+	Awards::Give(Awards::Scale(amount, Category::Quest), Key(kind));
+}
+
+void EvaluateQuestStage(RE::FormID formID, std::uint16_t stage)
+{
+	auto* quest = RE::TESForm::LookupByID<RE::TESQuest>(formID);
+	if (ShouldSkipQuest(quest)) {
+		return;
+	}
+
+	auto& cfg = Config::Get();
+	if (cfg.awardQuestStages) {
+		auto probe = ProbeStageVisibility(quest, stage);
+		probe.facts.alreadyAwarded = false;
+		const auto decision = DecideQuestStageAward(cfg.awardQuestStages, cfg.awardSilentQuestStages, probe.facts);
+		if (decision == QuestStageAwardDecision::Award) {
+			std::string reason = QuestLabel(quest);
+			if ((reason.empty() || reason == "quest") && !probe.objectiveText.empty()) {
+				reason = probe.objectiveText;
+			}
+			if (reason.empty()) {
+				reason = "quest";
+			}
+			Awards::Give(
+				Awards::Scale(static_cast<float>(cfg.QuestXP(QuestKind::Objectives)), Category::Quest),
+				reason);
+		} else {
+			SKSE::log::info(
+				"Quest stage XP skipped (not journal-visible): {} stage {}",
+				QuestLabel(quest),
+				stage);
+		}
+	}
+	AwardQuestComplete(quest);
+}
+
 std::unordered_set<RE::FormID> g_cleared;
 std::unordered_set<RE::FormID> g_clearedAtStart;
 
@@ -168,20 +447,22 @@ public:
 		if (ShouldSkipQuest(quest)) {
 			return RE::BSEventNotifyControl::kContinue;
 		}
-
-		auto& cfg = Config::Get();
-		if (cfg.awardQuestStages) {
-			Awards::Give(
-				Awards::Scale(static_cast<float>(cfg.QuestXP(QuestKind::Objectives)), Category::Quest),
-				"quest objective");
+		// Once per formID+stage. Reserve the key before the deferred task so
+		// a repeat event cannot queue a second award.
+		if (!MarkStageSeen(event->formID, event->stage)) {
+			return RE::BSEventNotifyControl::kContinue;
 		}
-		if (cfg.awardQuestComplete && quest && quest->IsCompleted()) {
-			const auto kind = KindFor(quest);
-			float amount = static_cast<float>(cfg.QuestXP(kind));
-			if (kind == QuestKind::Main) {
-				amount *= cfg.mainQuestMultiplier;
-			}
-			Awards::Give(Awards::Scale(amount, Category::Quest), Key(kind));
+		const auto formID = event->formID;
+		const auto stage = event->stage;
+		// Fragments (SetObjectiveDisplayed / journal CNAM) often run in the
+		// same SetStage call. Defer one main-thread tick so those writes are
+		// visible; fall back to immediate if the task interface is missing.
+		if (const auto* tasks = SKSE::GetTaskInterface()) {
+			tasks->AddTask([formID, stage]() {
+				EvaluateQuestStage(formID, stage);
+			});
+		} else {
+			EvaluateQuestStage(formID, stage);
 		}
 		return RE::BSEventNotifyControl::kContinue;
 	}
@@ -373,6 +654,14 @@ void Register()
 		src->AddEventSink(&g_skill);
 	}
 	RememberAlreadyCleared();
+	SnapshotEnabledQuests();
+#endif
+}
+
+void RememberQuestObjectiveBaseline()
+{
+#ifdef ADVENTUREXP_WITH_GAME
+	SnapshotEnabledQuests();
 #endif
 }
 
