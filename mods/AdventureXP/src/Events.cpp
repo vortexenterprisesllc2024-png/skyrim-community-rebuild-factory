@@ -150,12 +150,13 @@ const char* ObjectiveDisplayText(const RE::BGSQuestObjective* obj)
 	if (!obj) {
 		return "";
 	}
+	// BSFixedString is not static_cast-able to const char* on this CommonLib pin.
 	if constexpr (requires { obj->displayText.c_str(); }) {
 		if (const char* text = obj->displayText.c_str()) {
 			return text;
 		}
-	} else if constexpr (requires { static_cast<const char*>(obj->displayText); }) {
-		if (const char* text = static_cast<const char*>(obj->displayText)) {
+	} else if constexpr (requires { obj->displayText.data(); }) {
+		if (const char* text = obj->displayText.data()) {
 			return text;
 		}
 	}
