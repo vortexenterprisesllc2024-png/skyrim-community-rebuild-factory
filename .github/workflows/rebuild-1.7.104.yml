@@ -1,16 +1,17 @@
-# Community Rebuild Factory - wave 1 builds for Skyrim AE 1.7.104.0 / SKSE 2.3.1 / Address Library format 5.
+# Community Rebuild Factory - builds for Skyrim AE 1.7.104.0 / SKSE 2.3.1 / Address Library format 5.
 # Runs on GitHub's windows-2022 runners (VS 2022 + CMake preinstalled); nothing is installed on Jo's PC.
 # Start it from the Actions tab ("Run workflow"). Outputs land in releases/1.7.104/<mod>/ as a commit on main
 # (and as downloadable workflow artifacts). Recipes: scripts/*.md. Build scripts: ci/*.ps1.
+# Pull requests build autoplanteverything only, so the new recipe is proven without rebuilding the other four.
 name: Rebuild SKSE plugins for AE 1.7.104
 
 on:
   workflow_dispatch:
     inputs:
       mods:
-        description: "Which mods to build (comma-separated): oif, description-framework, grab-and-throw"
+        description: "Which mods to build (comma-separated): oif, description-framework, grab-and-throw, honed-metal, autoplanteverything"
         type: string
-        default: "oif,description-framework,grab-and-throw"
+        default: "oif,description-framework,grab-and-throw,autoplanteverything"
       commonlib_ref:
         description: "alandtse/CommonLibVR commit on branch ng (must contain Format::SSEv5)"
         type: string
@@ -23,12 +24,13 @@ on:
         description: "Commit releases/1.7.104/<mod>/ back to this branch"
         type: boolean
         default: true
+  pull_request:
 
 permissions:
   contents: write
 
 concurrency:
-  group: rebuild-1.7.104
+  group: rebuild-1.7.104-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -40,9 +42,13 @@ jobs:
       - id: pick
         shell: bash
         run: |
-          want="${{ inputs.mods }}"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            want="${{ inputs.mods }}"
+          else
+            want="autoplanteverything"
+          fi
           list="[]"
-          for m in oif description-framework grab-and-throw honed-metal; do
+          for m in oif description-framework grab-and-throw honed-metal autoplanteverything; do
             if [[ ",${want// /}," == *",$m,"* ]]; then
               list=$(echo "$list" | jq -c --arg m "$m" '. + [$m]')
             fi
@@ -50,8 +56,28 @@ jobs:
           echo "mods=$list" >> "$GITHUB_OUTPUT"
           echo "building: $list"
 
+  safety:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: ESL generator refuses empty overrides
+        shell: bash
+        run: |
+          set -euo pipefail
+          fail() { echo "SAFETY TEST FAILED: $1"; exit 1; }
+          tool="sources/autoplanteverything/tools/generate_esl.py"
+          [ -f "$tool" ] || fail "generate_esl.py missing"
+          python3 "$tool" --data /nope --plugins /nope/p.txt \
+            --out /tmp/a.esl && fail "wrote a file with no Data folder"
+          [ -f /tmp/a.esl ] && fail "leaked a file with no Data folder"
+          mkdir -p /tmp/d && : > /tmp/d/Skyrim.esm && printf '*Skyrim.esm\n' > /tmp/d/plugins.txt
+          python3 "$tool" --data /tmp/d --plugins /tmp/d/plugins.txt \
+            --out /tmp/b.esl && fail "wrote a file with no Hearthfire lists"
+          [ -f /tmp/b.esl ] && fail "leaked a file with no Hearthfire lists"
+          echo "All safety tests passed: no empty override can be produced."
+
   build:
-    needs: plan
+    needs: [plan, safety]
     if: ${{ needs.plan.outputs.mods != '[]' }}
     strategy:
       fail-fast: false
@@ -70,9 +96,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}\vcpkg-bincache
-          key: vcpkg-bincache-${{ matrix.mod }}-${{ inputs.commonlib_ref }}-${{ inputs.vcpkg_ref }}-${{ hashFiles('ci/*.ps1') }}
+          key: vcpkg-bincache-${{ matrix.mod }}-${{ inputs.commonlib_ref || 'd13d10a0ccb4945870eb841bf1ad8a6cf5ed84dd' }}-${{ inputs.vcpkg_ref || 'a1cae005c39be7b18ba319fced856b68d7276271' }}-${{ hashFiles('ci/*.ps1', 'sources/autoplanteverything/**') }}
           restore-keys: |
-            vcpkg-bincache-${{ matrix.mod }}-${{ inputs.commonlib_ref }}-${{ inputs.vcpkg_ref }}-
+            vcpkg-bincache-${{ matrix.mod }}-${{ inputs.commonlib_ref || 'd13d10a0ccb4945870eb841bf1ad8a6cf5ed84dd' }}-${{ inputs.vcpkg_ref || 'a1cae005c39be7b18ba319fced856b68d7276271' }}-
             vcpkg-bincache-${{ matrix.mod }}-
 
       - name: Toolchain versions
@@ -89,7 +115,7 @@ jobs:
       - name: Build ${{ matrix.mod }}
         shell: pwsh
         run: |
-          .\ci\build-${{ matrix.mod }}.ps1 -CommonLibRef "${{ inputs.commonlib_ref }}" -VcpkgRef "${{ inputs.vcpkg_ref }}" -OutDir "$env:GITHUB_WORKSPACE\releases\1.7.104\${{ matrix.mod }}"
+          .\ci\build-${{ matrix.mod }}.ps1 -CommonLibRef "${{ inputs.commonlib_ref || 'd13d10a0ccb4945870eb841bf1ad8a6cf5ed84dd' }}" -VcpkgRef "${{ inputs.vcpkg_ref || 'a1cae005c39be7b18ba319fced856b68d7276271' }}" -OutDir "$env:GITHUB_WORKSPACE\releases\1.7.104\${{ matrix.mod }}"
 
       - name: Upload ${{ matrix.mod }} outputs
         if: always()

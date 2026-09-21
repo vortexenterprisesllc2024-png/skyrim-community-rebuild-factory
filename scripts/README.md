@@ -17,6 +17,7 @@ Per-mod folders under that root:
 | Object Impact Framework | `oif\` | `ObjectImpactFramework.dll` |
 | Description Framework | `description-framework\` | `DescriptionFramework.dll` |
 | Grab And Throw | `grab-and-throw\` | `po3_GrabAndThrow.dll` |
+| Auto Plant Everything | `autoplanteverything\` | `AutoPlantEverything.dll` |
 
 ---
 
@@ -69,6 +70,7 @@ Select-String -Path include\REL\IDDB.h -Pattern "SSEv5"
 1. [oif-rebuild.md](./oif-rebuild.md) — **PRIORITY** (Apache-2.0). CIF does **not** replace OIF.
 2. [description-framework-rebuild.md](./description-framework-rebuild.md) — GPL-3.0 (keep rebuild source with the binary).
 3. [grab-and-throw-rebuild.md](./grab-and-throw-rebuild.md) — MIT, tag **v2.1.2**.
+4. [autoplanteverything-rebuild.md](./autoplanteverything-rebuild.md) — original plugin 0.2.0. Does not replace `Grokbot-AllPlantablePlants.esp`.
 
 Catalog-only (no rebuild this wave): Fleikon BTPS — already on Jo’s list (`queue/1.7.104.yaml` → `catalog_existing`).
 
