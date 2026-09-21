@@ -10,4 +10,10 @@
 #include <RE/Skyrim.h>
 #include <SKSE/SKSE.h>
 
+// winspool.h (pulled in by the Windows headers) defines AddForm as AddFormA/W.
+// That rename hits RE::BGSListForm::AddForm and the call will not compile.
+#ifdef AddForm
+#  undef AddForm
+#endif
+
 using namespace std::literals;   // for the "..."sv literal in main.cpp
