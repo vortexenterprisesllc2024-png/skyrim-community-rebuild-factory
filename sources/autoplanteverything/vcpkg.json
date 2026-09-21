@@ -1,0 +1,8 @@
+{
+  "name": "autoplanteverything",
+  "version-string": "0.2.0",
+  "dependencies": [
+    "commonlibsse-ng"
+  ],
+  "builtin-baseline": "ee12231b20c95013c6638d845d04c91559a1d1ff"
+}

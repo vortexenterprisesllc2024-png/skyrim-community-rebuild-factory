@@ -40,7 +40,9 @@ See `queue/1.7.104.yaml`. First wave:
 1. **Object Impact Framework** (arachnocid) — Apache-2.0 — essential object interaction JSON
 2. **Description Framework** (Nightfallstorm) — GPL-3.0 — description packs
 3. **Grab And Throw** (powerof3) — MIT — hard-popup on Jo’s list
-4. Catalog existing community patches (**Fleikon BTPS**, etc.) so players get one pack
+4. **Honed Metal** — classic SKSE plugin rebuilt against SKSE 2.3.1
+5. **Auto Plant Everything** 0.2.0 — Jo Hoeflich — original plugin, same CommonLib SSEv5 pin. Does not replace `Grokbot-AllPlantablePlants.esp`.
+6. Catalog existing community patches (**Fleikon BTPS**, etc.) so players get one pack
 
 ---
 

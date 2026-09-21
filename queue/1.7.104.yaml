@@ -36,6 +36,17 @@ items:
     status: rebuilding
     smoke: "Hold E grab + R throw; check ini"
 
+  - id: autoplanteverything
+    name: Auto Plant Everything
+    nexus: null
+    upstream: sources/autoplanteverything
+    license: "MIT plugin source; DLL is GPL-3.0-or-later via CommonLibSSE-NG"
+    last_good: "0.2.0 source (never compiled before this recipe)"
+    failure: "not a format-5 rebuild of an old DLL; first CI build of Jo's planter plugin"
+    status: rebuilding
+    smoke: "SKSE boot on 1.7.104, AutoPlantEverything.log shows pairs added; do not replace Grokbot-AllPlantablePlants.esp until that passes"
+    notes: "CommonLib pin d13d10a0ccb4945870eb841bf1ad8a6cf5ed84dd via cmake/ports/commonlibsse-ng. Offline generator must keep empty-list refusal."
+
   - id: btps-fleikon
     name: Better Third Person Selection (Fleikon 1.7.99 patch)
     nexus: null

@@ -1,0 +1,17 @@
+Auto Plant Everything
+Copyright (c) 2026 Jo Hoeflich
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this plugin's source (the files in this directory, excluding the CommonLib
+pin) and associated documentation files, to deal in the source without
+restriction, subject to the following conditions. The above copyright notice
+and this permission notice shall be included in all copies or substantial
+portions of the source.
+
+THE SOURCE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.
+
+Binary linkage. The DLL produced by ci/build-autoplanteverything.ps1 is linked
+against CommonLibSSE-NG (alandtse/CommonLibVR, GPL-3.0-or-later with the
+Modding Exception). That combined binary is distributed under GPL-3.0-or-later.
+The matching source is this tree plus the CommonLib commit named in
+BUILD-NOTES.md.
