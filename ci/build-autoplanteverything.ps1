@@ -80,8 +80,10 @@ if ($main -match 'UsesAddressLibrary\((true|false)\)') { throw 'src/main.cpp sti
 if ($main -notmatch 'UsesNoStructs\(\)') { throw 'src/main.cpp is missing UsesNoStructs() (NG 8.x)' }
 if ($main -match 'HasNoStructUse') { throw 'src/main.cpp still uses the NG 3.7 HasNoStructUse spelling' }
 $patches = @(
-    'No source patch to src/main.cpp or src/PCH.h. Both already target CommonLibSSE-NG 8.x: UsesAddressLibrary() takes no argument, UsesNoStructs() is the renamed no-struct flag, and PCH.h defines NOMINMAX before the Windows headers.',
-    'CMakeLists.txt links CommonLibSSE::CommonLibSSE directly. add_commonlibsse_plugin() would emit a second SKSEPlugin_Version and fail the link.',
+    'src/main.cpp: version data is a constexpr function stored in a constinit export, so the address-library bytes are in the DLL image. The calls stay UsesAddressLibrary() with no argument and UsesNoStructs().',
+    'src/main.cpp: SKSEPlugin_Load is declared with the NG 8.x SKSEPluginLoad macro. Writing bool SKSEPluginLoad(...) after including SKSE.h does not compile.',
+    'src/PCH.h: #undef AddForm after the Windows headers. winspool.h renames AddForm to AddFormA, which is not RE::BGSListForm::AddForm. NOMINMAX was already present.',
+    'CMakeLists.txt links CommonLibSSE::CommonLibSSE directly and finds DirectXTK plus spdlog first. add_commonlibsse_plugin() would emit a second SKSEPlugin_Version and fail the link.',
     "cmake/ports/commonlibsse-ng: REF/SHA512 bumped to alandtse/CommonLibVR $CommonLibRef, vcpkg_cmake_* helpers, MinHook fetched for SKSE_SUPPORT_PATCH_SAFETY, copyright file is COPYING.txt, port version 8.0.1, tests feature off.",
     "vcpkg.json builtin-baseline set to microsoft/vcpkg $vcpkgHead."
 )
