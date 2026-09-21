@@ -1,4 +1,4 @@
-# AdventureXP 4.2.0 factory wrapper.
+# AdventureXP 4.2.1 factory wrapper.
 # Private repo vortexenterprisesllc2024-png/AdventureXP could not be created
 # (GitHub App token lacks createRepository). Source lives at mods/AdventureXP/.
 # GitHub only loads workflows from the repo-root .github/workflows/, so this
@@ -132,19 +132,19 @@ jobs:
       - name: Confirm AdventureXP.dll in layout zip
         working-directory: C:\axp
         run: |
-          python -c "import zipfile; names=zipfile.ZipFile(r'dist/packed/AdventureXP-4.2.0.zip').namelist(); print(chr(10).join(names)); assert 'SKSE/Plugins/AdventureXP.dll' in names, names"
+          python -c "import zipfile; names=zipfile.ZipFile(r'dist/packed/AdventureXP-4.2.1.zip').namelist(); print(chr(10).join(names)); assert 'SKSE/Plugins/AdventureXP.dll' in names, names"
 
       - name: Copy packed zips into workspace
         run: |
           New-Item -ItemType Directory -Force -Path "$env:GITHUB_WORKSPACE\mods\AdventureXP\dist\packed" | Out-Null
-          Copy-Item C:\axp\dist\packed\AdventureXP-4.2.0.zip "$env:GITHUB_WORKSPACE\mods\AdventureXP\dist\packed\"
-          Copy-Item C:\axp\dist\packed\AdventureXP-4.2.0-SOURCE.zip "$env:GITHUB_WORKSPACE\mods\AdventureXP\dist\packed\"
+          Copy-Item C:\axp\dist\packed\AdventureXP-4.2.1.zip "$env:GITHUB_WORKSPACE\mods\AdventureXP\dist\packed\"
+          Copy-Item C:\axp\dist\packed\AdventureXP-4.2.1-SOURCE.zip "$env:GITHUB_WORKSPACE\mods\AdventureXP\dist\packed\"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: AdventureXP-4.2.0
+          name: AdventureXP-4.2.1
           path: |
-            mods/AdventureXP/dist/packed/AdventureXP-4.2.0.zip
-            mods/AdventureXP/dist/packed/AdventureXP-4.2.0-SOURCE.zip
+            mods/AdventureXP/dist/packed/AdventureXP-4.2.1.zip
+            mods/AdventureXP/dist/packed/AdventureXP-4.2.1-SOURCE.zip
           if-no-files-found: error

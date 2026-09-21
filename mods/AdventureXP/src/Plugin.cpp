@@ -1,4 +1,5 @@
 #include "AdventureXP/PCH.h"
+#include "AdventureXP/Awards.h"
 #include "AdventureXP/Config.h"
 #include "AdventureXP/Events.h"
 #include "AdventureXP/Papyrus.h"
@@ -112,6 +113,10 @@ namespace
                 "AdventureXP {} ready (AE 1.7.104 / Address Library format 5, preset {})",
                 ADVENTUREXP_VERSION_STRING,
                 AdventureXP::Config::Get().preset);
+            break;
+        case SKSE::MessagingInterface::kNewGame:
+        case SKSE::MessagingInterface::kPostLoadGame:
+            AdventureXP::Awards::SyncFromPlayer();
             break;
         default:
             break;

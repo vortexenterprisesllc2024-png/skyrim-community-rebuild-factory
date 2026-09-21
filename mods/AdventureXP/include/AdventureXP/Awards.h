@@ -7,6 +7,7 @@
 namespace AdventureXP::Awards {
 
 void Give(float amount, std::string_view reason);
+void SyncFromPlayer();
 float Scale(float base, Category category);
 float ThresholdForLevel(int level);
 

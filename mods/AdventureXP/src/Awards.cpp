@@ -36,17 +36,13 @@ void Notify(std::string_view text)
 	}
 }
 
-void BumpVanillaLevel(int)
+RE::PlayerCharacter::PlayerSkills* LiveSkills()
 {
 	auto* player = RE::PlayerCharacter::GetSingleton();
 	if (!player) {
-		return;
+		return nullptr;
 	}
-	// v8 PlayerCharacter has no SetLevel. Advance the vanilla skill
-	// XP page the same way the factory 4.0 DLL did.
-	if (auto* skills = player->GetPlayerRuntimeData().skills) {
-		skills->AdvanceLevel(true);
-	}
+	return player->GetPlayerRuntimeData().skills;
 }
 
 void WritePercentGlobal(float percent)
@@ -57,10 +53,51 @@ void WritePercentGlobal(float percent)
 		}
 	}
 }
+
+void SyncPercentFromSkills(RE::PlayerCharacter::PlayerSkills* skills)
+{
+	if (!skills || !skills->data) {
+		return;
+	}
+	g_pool = skills->data->xp;
+	const float next = skills->data->levelThreshold;
+	WritePercentGlobal(next > 0.f ? (g_pool / next) * 100.f : 0.f);
+}
+
+void TryLevelUp(RE::PlayerCharacter::PlayerSkills* skills)
+{
+	if (!skills || !skills->data) {
+		return;
+	}
+
+	auto* data = skills->data;
+	const auto& cfg = Config::Get();
+	auto* player = RE::PlayerCharacter::GetSingleton();
+	const auto level = player ? player->GetLevel() : 1;
+	g_level = level;
+
+	if (cfg.maxLevel > 0 && level >= static_cast<std::uint16_t>(cfg.maxLevel)) {
+		return;
+	}
+
+	int guard = 0;
+	while (data->levelThreshold > 0.0f && data->xp >= data->levelThreshold && guard++ < 16) {
+		if (cfg.maxLevel > 0 && player && player->GetLevel() >= static_cast<std::uint16_t>(cfg.maxLevel)) {
+			break;
+		}
+		const float leftover = data->xp - data->levelThreshold;
+		skills->AdvanceLevel(true);
+		data->xp = (std::max)(0.0f, leftover);
+		g_pool = data->xp;
+		if (player) {
+			g_level = player->GetLevel();
+		}
+		Notify("You have advanced a level.");
+		RE::PlaySound("UILevelUp");
+	}
+}
 #else
 void Notify(std::string_view) {}
-void BumpVanillaLevel(int) {}
-void WritePercentGlobal(float) {}
 #endif
 
 }  // namespace
@@ -89,23 +126,45 @@ float Scale(float base, Category category)
 	return base * cat * global;
 }
 
+void SyncFromPlayer()
+{
+#ifdef ADVENTUREXP_WITH_GAME
+	if (auto* player = RE::PlayerCharacter::GetSingleton()) {
+		g_level = player->GetLevel();
+	}
+	SyncPercentFromSkills(LiveSkills());
+#endif
+}
+
 void Give(float amount, std::string_view reason)
 {
 	if (amount <= 0.f) {
 		return;
 	}
 
+#ifdef ADVENTUREXP_WITH_GAME
+	// Vanilla HUD reads PlayerSkills XP. The private curve (g_pool /
+	// ThresholdForLevel) is not the meter Jo sees — write the stock page.
+	auto* skills = LiveSkills();
+	if (!skills || !skills->data) {
+		SKSE::log::warn("Cannot award XP: PlayerSkills unavailable");
+	} else {
+		skills->data->xp += amount;
+		g_pool = skills->data->xp;
+		if (auto* player = RE::PlayerCharacter::GetSingleton()) {
+			g_level = player->GetLevel();
+		}
+		TryLevelUp(skills);
+		SyncPercentFromSkills(skills);
+	}
+#else
 	auto& cfg = Config::Get();
 	g_pool += amount;
 	while (g_level < cfg.maxLevel && g_pool >= ThresholdForLevel(g_level)) {
 		g_pool -= ThresholdForLevel(g_level);
 		++g_level;
-		BumpVanillaLevel(g_level);
 	}
-
-	const float next = ThresholdForLevel(g_level);
-	const float percent = next > 0.f ? (g_pool / next) * 100.f : 0.f;
-	WritePercentGlobal(percent);
+#endif
 
 	char buf[160];
 	if (reason.empty()) {
