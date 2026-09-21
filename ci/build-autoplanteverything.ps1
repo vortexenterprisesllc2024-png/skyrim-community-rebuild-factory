@@ -63,7 +63,10 @@ Edit-File $port "vcpkg_configure_cmake(`n    SOURCE_PATH `"`${SOURCE_PATH}`"`n  
 Edit-File $port 'vcpkg_install_cmake()' 'vcpkg_cmake_install()'
 $minhookSha512 = Get-GitHubArchiveSha512 -Repo 'TsudaKageyu/minhook' -Sha 'v1.3.4'
 Edit-File $port "file(COPY `${OPENVR_FILES} DESTINATION `"`${SOURCE_PATH}/extern/openvr`")" "file(COPY `${OPENVR_FILES} DESTINATION `"`${SOURCE_PATH}/extern/openvr`")`n`nvcpkg_from_github(`n    OUT_SOURCE_PATH MINHOOK_SOURCE_PATH`n    REPO TsudaKageyu/minhook`n    REF v1.3.4`n    SHA512 $minhookSha512`n    HEAD_REF master`n)"
-Edit-File $port 'OPTIONS -DBUILD_TESTS=off -DSKSE_SUPPORT_XBYAK=on' "OPTIONS -DBUILD_TESTS=off -DSKSE_SUPPORT_XBYAK=on `"-DFETCHCONTENT_SOURCE_DIR_HDE64=`${MINHOOK_SOURCE_PATH}`""
+# VR support links extern/openvr/lib/win64/openvr_api.lib by absolute path. That path
+# is baked into the exported CMake target and breaks the next runner when the vcpkg
+# binary cache is restored. This plugin is for AE 1.7.104, so leave VR off.
+Edit-File $port 'OPTIONS -DBUILD_TESTS=off -DSKSE_SUPPORT_XBYAK=on' "OPTIONS -DBUILD_TESTS=off -DSKSE_SUPPORT_XBYAK=on -DENABLE_SKYRIM_VR=OFF `"-DFETCHCONTENT_SOURCE_DIR_HDE64=`${MINHOOK_SOURCE_PATH}`""
 Edit-File $port 'INSTALL "${SOURCE_PATH}/LICENSE"' 'INSTALL "${SOURCE_PATH}/COPYING.txt"'
 Get-Content $port
 $portJson = 'cmake\ports\commonlibsse-ng\vcpkg.json'
@@ -84,7 +87,7 @@ $patches = @(
     'src/main.cpp: SKSEPlugin_Load is declared with the NG 8.x SKSEPluginLoad macro. Writing bool SKSEPluginLoad(...) after including SKSE.h does not compile.',
     'src/PCH.h: #undef AddForm after the Windows headers. winspool.h renames AddForm to AddFormA, which is not RE::BGSListForm::AddForm. NOMINMAX was already present.',
     'CMakeLists.txt links CommonLibSSE::CommonLibSSE directly and finds DirectXTK plus spdlog first. add_commonlibsse_plugin() would emit a second SKSEPlugin_Version and fail the link.',
-    "cmake/ports/commonlibsse-ng: REF/SHA512 bumped to alandtse/CommonLibVR $CommonLibRef, vcpkg_cmake_* helpers, MinHook fetched for SKSE_SUPPORT_PATCH_SAFETY, copyright file is COPYING.txt, port version 8.0.1, tests feature off.",
+    "cmake/ports/commonlibsse-ng: REF/SHA512 bumped to alandtse/CommonLibVR $CommonLibRef, vcpkg_cmake_* helpers, MinHook fetched for SKSE_SUPPORT_PATCH_SAFETY, ENABLE_SKYRIM_VR=OFF so the exported target does not bake an absolute openvr_api.lib path, copyright file is COPYING.txt, port version 8.0.1, tests feature off.",
     "vcpkg.json builtin-baseline set to microsoft/vcpkg $vcpkgHead."
 )
 
