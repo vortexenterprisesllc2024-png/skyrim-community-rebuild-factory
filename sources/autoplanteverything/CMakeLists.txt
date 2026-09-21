@@ -4,6 +4,11 @@ project(AutoPlantEverything VERSION 0.2.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# CommonLibSSE-targets.cmake names these imported targets before its own
+# config file calls find_dependency. Resolve them first, same order as
+# Object Impact Framework's cmake/XSEPlugin.cmake.
+find_package(DirectXTK CONFIG REQUIRED)
+find_package(spdlog CONFIG REQUIRED)
 find_package(CommonLibSSE CONFIG REQUIRED)
 
 # src/main.cpp already exports SKSEPlugin_Version (UsesAddressLibrary / UsesNoStructs).
