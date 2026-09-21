@@ -72,9 +72,11 @@ Edit-File $portJson "`"dependencies`": [`n    {`n      `"name`": `"vcpkg-cmake-c
 Edit-File $portJson "`"default-features`": [`n    `"tests`"`n  ]" "`"default-features`": []"
 
 # The plugin source is already NG 8.x. Confirm the two calls, and refuse the 3.7 spellings.
-$main = [IO.File]::ReadAllText((Join-Path $src 'src\main.cpp'))
+# Comments document the old spellings, so only non-comment lines count.
+$mainLines = Get-Content -Path (Join-Path $src 'src\main.cpp') | Where-Object { $_ -notmatch '^\s*//' }
+$main = $mainLines -join "`n"
 if ($main -notmatch 'UsesAddressLibrary\(\)') { throw 'src/main.cpp is missing UsesAddressLibrary() (no-arg, NG 8.x)' }
-if ($main -match 'UsesAddressLibrary\(true\)') { throw 'src/main.cpp still uses the NG 3.7 UsesAddressLibrary(true) spelling' }
+if ($main -match 'UsesAddressLibrary\((true|false)\)') { throw 'src/main.cpp still uses the NG 3.7 UsesAddressLibrary(bool) spelling' }
 if ($main -notmatch 'UsesNoStructs\(\)') { throw 'src/main.cpp is missing UsesNoStructs() (NG 8.x)' }
 if ($main -match 'HasNoStructUse') { throw 'src/main.cpp still uses the NG 3.7 HasNoStructUse spelling' }
 $patches = @(
