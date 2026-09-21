@@ -1,0 +1,13 @@
+/build/
+/dist/_staging/
+/tools/
+/agent-tools/
+/terminals/
+__pycache__/
+*.pyc
+*.dll
+*.pdb
+*.obj
+*.lib
+*.exp
+.DS_Store

@@ -1,2 +1,3 @@
 # upstream mod sources are kept byte-identical to the author's zips (no CRLF conversion on the Windows runner)
 sources/** -text
+mods/** -text
