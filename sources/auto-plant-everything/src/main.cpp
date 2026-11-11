@@ -30,6 +30,11 @@
 #include <unordered_set>
 #include <vector>
 
+// windows.h (pulled in by CommonLib) defines AddForm as AddFormA/AddFormW for the print spooler API.
+#ifdef AddForm
+#  undef AddForm
+#endif
+
 namespace {
     constexpr std::uint32_t kPlantableBase = 0x008247;  // flPlanterPlantableItem
     constexpr std::uint32_t kPlantedBase   = 0x008246;  // flPlanterPlantedFlora
@@ -362,17 +367,10 @@ namespace {
     }
 }
 
-extern "C" [[maybe_unused]] __declspec(dllexport) constinit auto SKSEPlugin_Version = []() {
-    SKSE::PluginVersionData v{};
-    v.PluginName("AutoPlantEverything");
-    v.PluginVersion({1, 0, 0, 0});
-    v.AuthorName("Jo Hoeflich");
-    v.UsesAddressLibrary();
-    v.UsesNoStructs();
-    return v;
-}();
+// Name, version (from CMake project VERSION), author and Address Library use are declared by
+// add_commonlibsse_plugin() in the generated __AutoPlantEverythingPlugin.cpp.
 
-extern "C" [[maybe_unused]] __declspec(dllexport) bool SKSEPluginLoad(const SKSE::LoadInterface* skse) {
+SKSEPluginLoad(const SKSE::LoadInterface* skse) {
     SKSE::Init(skse);
     SKSE::log::info("Auto Plant Everything {} loaded.", kVersion);
     LoadSettings();
