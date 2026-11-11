@@ -1,0 +1,6 @@
+<fomod>
+    <Name>Auto Plant Everything</Name>
+    <Author>Jo Hoeflich</Author>
+    <Version>1.0.0</Version>
+    <Description>Makes everything harvestable in your load order plantable in Hearthfire and Goldenhills planters: herbs, crops, mushrooms, eggs from nests, hanging moss and more. Rescans every launch, so new plant mods are picked up automatically.</Description>
+</fomod>

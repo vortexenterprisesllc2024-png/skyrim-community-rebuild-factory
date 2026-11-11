@@ -1,0 +1,112 @@
+# Builds Auto Plant Everything (Jo Hoeflich's own SKSE plugin, source in sources/auto-plant-everything/).
+# Runs on every push to the auto-plant-everything branch that touches the source or this file.
+# Same recipe that produced the working 0.2.0 DLL: vcpkg baseline ee12231 + commonlibsse-ng, Ninja, MSVC.
+# The finished DLL and Vortex/Nexus zip are committed back to this branch under releases/auto-plant-everything/.
+name: Build Auto Plant Everything
+
+on:
+  push:
+    branches: [auto-plant-everything]
+    paths:
+      - "sources/auto-plant-everything/**"
+      - ".github/workflows/auto-plant-everything.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: auto-plant-everything
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: windows-2022
+    defaults:
+      run:
+        working-directory: sources/auto-plant-everything
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Ninja
+        run: choco install ninja -y
+
+      - name: Clone vcpkg
+        run: |
+          git clone --depth 1 https://github.com/microsoft/vcpkg.git C:\vcpkg
+          git -C C:\vcpkg fetch --depth 1 origin ee12231b20c95013c6638d845d04c91559a1d1ff
+          git -C C:\vcpkg checkout ee12231b20c95013c6638d845d04c91559a1d1ff
+          C:\vcpkg\bootstrap-vcpkg.bat
+          echo "VCPKG_ROOT=C:\vcpkg" >> $env:GITHUB_ENV
+
+      - name: MSVC environment
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Configure
+        run: cmake --preset windows-msvc-release
+
+      - name: Build
+        run: cmake --build --preset windows-msvc-release --parallel
+
+      - name: Verify and package
+        shell: pwsh
+        run: |
+          $dll = Get-ChildItem -Recurse -Filter AutoPlantEverything.dll build | Select-Object -First 1
+          if (-not $dll) { throw "no DLL was produced" }
+          if ($dll.Length -lt 50000) { throw "AutoPlantEverything.dll is only $($dll.Length) bytes - not a real build" }
+          python -m pip install --quiet pefile
+          @'
+          import sys, pefile
+          pe = pefile.PE(sys.argv[1])
+          assert pe.FILE_HEADER.Machine == 0x8664, 'not x64'
+          names = {e.name.decode() for e in pe.DIRECTORY_ENTRY_EXPORT.symbols if e.name}
+          assert {'SKSEPlugin_Load', 'SKSEPlugin_Version'} <= names, names
+          print('exports OK:', sorted(names))
+          '@ | Out-File -Encoding ascii verify.py
+          python verify.py $dll.FullName
+          if ($LASTEXITCODE -ne 0) { throw "export check failed" }
+          $ver = "1.0.0"
+          New-Item -ItemType Directory -Force -Path dist\SKSE\Plugins, dist\fomod | Out-Null
+          Copy-Item $dll.FullName dist\SKSE\Plugins\
+          Copy-Item package\SKSE\Plugins\AutoPlantEverything.ini dist\SKSE\Plugins\
+          Copy-Item package\fomod\info.xml dist\fomod\
+          $out = "$env:GITHUB_WORKSPACE\releases\auto-plant-everything\$ver"
+          New-Item -ItemType Directory -Force -Path $out | Out-Null
+          Compress-Archive -Path dist\* -DestinationPath "$out\AutoPlantEverything-$ver.zip" -Force
+          Copy-Item $dll.FullName $out\
+          "Built $(Get-Date -Format u) from commit $env:GITHUB_SHA. DLL $($dll.Length) bytes. SHA256 $((Get-FileHash $dll.FullName).Hash)" | Out-File -Encoding utf8 "$out\BUILD-NOTES.txt"
+          Get-ChildItem $out | Format-Table Name, Length
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: auto-plant-everything
+          path: releases/auto-plant-everything/
+          if-no-files-found: error
+
+  commit:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: auto-plant-everything
+          path: releases/auto-plant-everything/
+      - name: Commit build outputs
+        shell: bash
+        run: |
+          set -e
+          git config user.name "rebuild-factory[bot]"
+          git config user.email "vortexenterprisesllc2024+factory@users.noreply.github.com"
+          git add -A releases/auto-plant-everything
+          if git diff --cached --quiet; then echo "nothing new"; exit 0; fi
+          git commit -m "releases/auto-plant-everything: build outputs (run ${{ github.run_id }})"
+          for i in 1 2 3; do
+            if git push origin HEAD:${{ github.ref_name }}; then exit 0; fi
+            git pull --rebase origin ${{ github.ref_name }}
+          done
+          git push origin HEAD:${{ github.ref_name }}
