@@ -24,7 +24,7 @@ Copy-Item -Recurse -Force "$proj\*" $work
 {
   "name": "autoplanteverything",
   "version-string": "1.0.0",
-  "dependencies": [ "commonlibsse-ng", "spdlog" ]
+  "dependencies": [ "commonlibsse-ng", "directxtk", "spdlog" ]
 }
 '@ | Out-File -Encoding ascii "$work\vcpkg.json"
 
