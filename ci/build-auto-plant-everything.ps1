@@ -45,6 +45,9 @@ $minhookSha512 = Get-GitHubArchiveSha512 -Repo 'TsudaKageyu/minhook' -Sha 'v1.3.
 Edit-File $port "file(COPY `${OPENVR_FILES} DESTINATION `"`${SOURCE_PATH}/extern/openvr`")" "file(COPY `${OPENVR_FILES} DESTINATION `"`${SOURCE_PATH}/extern/openvr`")`n`nvcpkg_from_github(`n    OUT_SOURCE_PATH MINHOOK_SOURCE_PATH`n    REPO TsudaKageyu/minhook`n    REF v1.3.4`n    SHA512 $minhookSha512`n    HEAD_REF master`n)"
 Edit-File $port 'OPTIONS -DBUILD_TESTS=off -DSKSE_SUPPORT_XBYAK=on' "OPTIONS -DBUILD_TESTS=off -DSKSE_SUPPORT_XBYAK=on `"-DFETCHCONTENT_SOURCE_DIR_HDE64=`${MINHOOK_SOURCE_PATH}`""
 Edit-File $port 'INSTALL "${SOURCE_PATH}/LICENSE"' 'INSTALL "${SOURCE_PATH}/COPYING.txt"'
+# SE/AE only: with VR on, CommonLib's exported link interface points at openvr_api.lib inside vcpkg's
+# buildtrees, which does not exist when the package comes from the binary cache.
+Edit-File $port '-DSKSE_SUPPORT_XBYAK=on "' '-DSKSE_SUPPORT_XBYAK=on -DENABLE_SKYRIM_VR=OFF "'
 $portJson = 'cmake\ports\commonlibsse-ng\vcpkg.json'
 Edit-File $portJson '"version-semver": "3.7.0"' '"version-semver": "8.0.1"'
 Edit-File $portJson "`"dependencies`": [`n    {`n      `"name`": `"vcpkg-cmake-config`",`n      `"host`": true`n    }," "`"dependencies`": [`n    {`n      `"name`": `"vcpkg-cmake`",`n      `"host`": true`n    },`n    {`n      `"name`": `"vcpkg-cmake-config`",`n      `"host`": true`n    },"
