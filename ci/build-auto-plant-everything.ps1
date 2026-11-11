@@ -49,6 +49,9 @@ $portJson = 'cmake\ports\commonlibsse-ng\vcpkg.json'
 Edit-File $portJson '"version-semver": "3.7.0"' '"version-semver": "8.0.1"'
 Edit-File $portJson "`"dependencies`": [`n    {`n      `"name`": `"vcpkg-cmake-config`",`n      `"host`": true`n    }," "`"dependencies`": [`n    {`n      `"name`": `"vcpkg-cmake`",`n      `"host`": true`n    },`n    {`n      `"name`": `"vcpkg-cmake-config`",`n      `"host`": true`n    },"
 Edit-File $portJson "`"default-features`": [`n    `"tests`"`n  ]" "`"default-features`": []"
+# newer vcpkg fails the install on CommonLib's absolute paths in its exported targets file (harmless for a
+# local overlay build); opt out the same way vcpkg's own message suggests.
+Add-Content -Path $port -Value "`nset(VCPKG_POLICY_SKIP_ABSOLUTE_PATHS_CHECK enabled)"
 Get-Content $port
 
 # ---- 3. configure + build ------------------------------------------------------
