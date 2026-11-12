@@ -37,6 +37,8 @@ Edit-File $port "file(COPY `${OPENVR_FILES} DESTINATION `"`${SOURCE_PATH}/extern
 Edit-File $port 'OPTIONS -DBUILD_TESTS=off -DSKSE_SUPPORT_XBYAK=on' "OPTIONS -DBUILD_TESTS=off -DSKSE_SUPPORT_XBYAK=on `"-DFETCHCONTENT_SOURCE_DIR_HDE64=`${MINHOOK_SOURCE_PATH}`""
 # NG 8.x ships COPYING.txt (GPL-3.0-or-later + exceptions), not LICENSE
 Edit-File $port 'INSTALL "${SOURCE_PATH}/LICENSE"' 'INSTALL "${SOURCE_PATH}/COPYING.txt"'
+# current vcpkg master fails the install on CommonLib's absolute paths in its exported targets file; opt out as vcpkg suggests.
+Add-Content -Path $port -Value "`nset(VCPKG_POLICY_SKIP_ABSOLUTE_PATHS_CHECK enabled)"
 Get-Content $port
 $portJson = 'cmake\ports\commonlibsse-ng\vcpkg.json'
 Edit-File $portJson '"version-semver": "3.7.0"' '"version-semver": "8.0.1"'
