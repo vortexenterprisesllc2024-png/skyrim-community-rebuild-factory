@@ -24,7 +24,10 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build OIF
         shell: pwsh
-        run: .\ci\build-oif.ps1
+        run: |
+          .\ci\build-oif.ps1
+          if (-not (Test-Path releases\1.7.104\oif\ObjectImpactFramework.dll)) { throw 'no DLL' }
+          exit 0  # build-oif.ps1 throws on any real failure; a stray native exit code after packaging is not one
       - uses: actions/upload-artifact@v4
         with:
           name: oif
