@@ -1,0 +1,58 @@
+# Rebuilds Object Impact Framework with the ExecuteCommand address fix (ci/build-oif.ps1) on push to this branch,
+# then commits releases/1.7.104/oif back to the branch.
+name: Rebuild OIF (console-command fix)
+
+on:
+  push:
+    branches: [oif-console-command-fix]
+    paths:
+      - "ci/build-oif.ps1"
+      - ".github/workflows/oif-console-command-fix.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: oif-console-command-fix
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build OIF
+        shell: pwsh
+        run: .\ci\build-oif.ps1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: oif
+          path: releases/1.7.104/oif/
+          if-no-files-found: error
+
+  commit:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: oif
+          path: releases/1.7.104/oif/
+      - name: Commit build outputs
+        shell: bash
+        run: |
+          set -e
+          git config user.name "rebuild-factory[bot]"
+          git config user.email "vortexenterprisesllc2024+factory@users.noreply.github.com"
+          git add -A releases/1.7.104/oif
+          if git diff --cached --quiet; then echo "nothing new"; exit 0; fi
+          git commit -m "releases/1.7.104/oif: console-command fix build (run ${{ github.run_id }})"
+          for i in 1 2 3; do
+            if git push origin HEAD:${{ github.ref_name }}; then exit 0; fi
+            git pull --rebase origin ${{ github.ref_name }}
+          done
+          git push origin HEAD:${{ github.ref_name }}

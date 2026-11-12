@@ -68,6 +68,8 @@ Edit-File 'src\Effects.cpp' 'pick.rayInput.filterInfo = (filterInfo & 0xFFFF0000
 $patches += 'src/Effects.cpp: Actor::GetCollisionFilterInfo() and hkpWorldRayCastInput::filterInfo now use the RE::CFilter wrapper (a struct around the same uint32) instead of a raw uint32_t; same engine call (ID 36559/37560), same bits.'
 Edit-File 'src\Effects.cpp' 'audioManager->BuildSoundDataFromDescriptor(' 'audioManager->GetSoundHandle('
 $patches += 'src/Effects.cpp: BSAudioManager::BuildSoundDataFromDescriptor() was renamed GetSoundHandle() in NG 8.x - same engine function (ID 66404/67666), same arguments.'
+Edit-File 'src\Effects.cpp' 'RELOCATION_ID(21416, REL::Module::get().version().patch() < 1130 ? 21890 : 441582)' 'RELOCATION_ID(21416, REL::Module::get().version() < REL::Version(1, 6, 1130, 0) ? 21890 : 441582)'
+$patches += 'src/Effects.cpp: ExecuteCommand (Script::CompileAndRun) chose its AE ID from version().patch() alone, so 1.7.104 (patch 104) took the 1.6.x ID 21890, which is unmapped in versionlib-1-7-104 (CTD with no crash log the moment a rule ran ExecuteConsoleCommand*, e.g. Hide in Bushes - OIF). Now compares the full version: 1.6.1130 and later, including 1.7.x, use 441582 (mapped to +0x343D00 in versionlib-1-7-104).'
 Invoke-Checked git --no-pager diff --stat
 
 # ---- 4. configure + build (upstream preset "AE") ------------------------------
