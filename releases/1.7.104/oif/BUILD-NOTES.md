@@ -1,7 +1,7 @@
 # BUILD-NOTES - Object Impact Framework - Skyrim AE 1.7.104.0 / SKSE 2.3.1 / Address Library format 5
 
 Community rebuild. Not an official author build. Built on a GitHub Actions `windows-latest` runner by the
-skyrim-community-rebuild-factory workflow (run 34795479373, 2026-09-14 01:37 UTC).
+skyrim-community-rebuild-factory workflow (run 43229735999, 2026-11-12 14:00 UTC).
 
 | Field | Value |
 |---|---|
@@ -9,12 +9,12 @@ skyrim-community-rebuild-factory workflow (run 34795479373, 2026-09-14 01:37 UTC
 | Upstream licence | Apache-2.0 (LICENSE alongside) |
 | Nexus | https://www.nexusmods.com/skyrimspecialedition/mods/149484 |
 | CommonLib | alandtse/CommonLibVR branch ng, commit `d13d10a0ccb4945870eb841bf1ad8a6cf5ed84dd` (CommonLibSSE-NG 8.0.1) via the upstream vcpkg overlay port (REF/SHA512 bumped) |
-| vcpkg | microsoft/vcpkg `a1cae005c39be7b18ba319fced856b68d7276271`, triplet x64-windows-static-md |
+| vcpkg | microsoft/vcpkg `177e8175121536d414f405ed8b3099b325a42638`, triplet x64-windows-static-md |
 | Configure | ``cmake --preset AE`` (Visual Studio 17 2022, x64, /MD, ENABLE_SKYRIM_AE) |
 | Build | ``cmake --build --preset AE`` (Release) |
 | DLL | `ObjectImpactFramework.dll` |
-| DLL size | 2153472 bytes |
-| DLL SHA256 | `c4ab8b976acec3dea6ec0688c9a4956c52477ad278e12329954fad4423cd9c45` |
+| DLL size | 2159104 bytes |
+| DLL SHA256 | `e43a83e6f9a88b6876fb36d2c0c2e8590f53548f43a758bcc00def35ba90a140` |
 | Compiler | MSVC (Visual Studio 2022, v143) on windows-latest; see workflow log for exact `cl.exe` version |
 | Smoke test | NOT TESTED by the workflow - Jo must SKSE-boot to main menu + in-game check before this counts |
 
@@ -30,6 +30,7 @@ skyrim-community-rebuild-factory workflow (run 34795479373, 2026-09-14 01:37 UTC
 - src/Effects.cpp: two COL_LAYER enumerators renamed in NG 8.x (kClutterLarge=29 -> written as the literal 29; kItemPicker=40 -> kItemPick); the raycast layer list keeps the same numeric layers.
 - src/Effects.cpp: Actor::GetCollisionFilterInfo() and hkpWorldRayCastInput::filterInfo now use the RE::CFilter wrapper (a struct around the same uint32) instead of a raw uint32_t; same engine call (ID 36559/37560), same bits.
 - src/Effects.cpp: BSAudioManager::BuildSoundDataFromDescriptor() was renamed GetSoundHandle() in NG 8.x - same engine function (ID 66404/67666), same arguments.
+- src/Effects.cpp: ExecuteCommand (Script::CompileAndRun) chose its AE ID from version().patch() alone, so 1.7.104 (patch 104) took the 1.6.x ID 21890, which is unmapped in versionlib-1-7-104 (CTD with no crash log the moment a rule ran ExecuteConsoleCommand*, e.g. Hide in Bushes - OIF). Now compares the full version: 1.6.1130 and later, including 1.7.x, use 441582 (mapped to +0x343D00 in versionlib-1-7-104).
 
 ## Licence note
 
