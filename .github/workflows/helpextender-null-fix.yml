@@ -1,4 +1,4 @@
-# Rebuilds HelpExtender 3.0.0 (shad0wshayd3, commit 9f5cdea = the Nexus 3.0.0 release) with null guards
+# Rebuilds HelpExtender 3.0.0 (shad0wshayd3, commit 88eff7f = Nexus 3.0.0 source + its lib update) with null guards
 # so the console "help" command no longer crashes on forms that have no editor ID (e.g. Sex Scene Framework keywords).
 name: Rebuild HelpExtender (null editor ID fix)
 
@@ -28,7 +28,7 @@ jobs:
           set -e
           git clone https://github.com/shad0wshayd3-TES5/BakaHelpExtender src-he
           cd src-he
-          git checkout 9f5cdea
+          git checkout 88eff7f
           git submodule update --init --recursive
           git apply ../patches/helpextender-null-fix.patch
           git diff --stat
