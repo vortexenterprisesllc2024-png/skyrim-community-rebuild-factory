@@ -1,0 +1,85 @@
+# Rebuilds HelpExtender 3.0.0 (shad0wshayd3, commit 9f5cdea = the Nexus 3.0.0 release) with null guards
+# so the console "help" command no longer crashes on forms that have no editor ID (e.g. Sex Scene Framework keywords).
+name: Rebuild HelpExtender (null editor ID fix)
+
+on:
+  push:
+    branches: [helpextender-null-fix]
+    paths:
+      - "patches/helpextender-null-fix.patch"
+      - ".github/workflows/helpextender-null-fix.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: helpextender-null-fix
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - name: Get HelpExtender source
+        shell: bash
+        run: |
+          set -e
+          git clone https://github.com/shad0wshayd3-TES5/BakaHelpExtender src-he
+          cd src-he
+          git checkout 9f5cdea
+          git submodule update --init --recursive
+          git apply ../patches/helpextender-null-fix.patch
+          git diff --stat
+      - uses: xmake-io/github-action-setup-xmake@v1
+        with:
+          xmake-version: latest
+      - name: Build
+        shell: pwsh
+        run: |
+          cd src-he
+          xmake f -m releasedbg -y
+          if ($LASTEXITCODE) { throw 'configure failed' }
+          xmake -y
+          if ($LASTEXITCODE) { throw 'build failed' }
+          $dll = Get-ChildItem -Recurse -Filter HelpExtender.dll build | Select-Object -First 1
+          if (-not $dll) { throw 'no DLL' }
+          New-Item -ItemType Directory -Force ..\releases\1.7.104\helpextender | Out-Null
+          Copy-Item $dll.FullName ..\releases\1.7.104\helpextender\
+          $pdb = Join-Path $dll.DirectoryName 'HelpExtender.pdb'
+          if (Test-Path $pdb) { Copy-Item $pdb ..\releases\1.7.104\helpextender\ }
+          Get-ChildItem ..\releases\1.7.104\helpextender
+          exit 0
+      - uses: actions/upload-artifact@v4
+        with:
+          name: helpextender
+          path: releases/1.7.104/helpextender/
+          if-no-files-found: error
+
+  commit:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: helpextender
+          path: releases/1.7.104/helpextender/
+      - name: Commit build outputs
+        shell: bash
+        run: |
+          set -e
+          rm -f releases/1.7.104/helpextender/*.pdb
+          git config user.name "rebuild-factory[bot]"
+          git config user.email "vortexenterprisesllc2024+factory@users.noreply.github.com"
+          git add -A releases/1.7.104/helpextender
+          if git diff --cached --quiet; then echo "nothing new"; exit 0; fi
+          git commit -m "releases/1.7.104/helpextender: null editor ID fix build (run ${{ github.run_id }})"
+          for i in 1 2 3; do
+            if git push origin HEAD:${{ github.ref_name }}; then exit 0; fi
+            git pull --rebase origin ${{ github.ref_name }}
+          done
+          git push origin HEAD:${{ github.ref_name }}

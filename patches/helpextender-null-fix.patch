@@ -1,0 +1,54 @@
+diff --git a/src/ObScript/Help.cpp b/src/ObScript/Help.cpp
+index 9712d86..72417f4 100644
+--- a/src/ObScript/Help.cpp
++++ b/src/ObScript/Help.cpp
+@@ -140,8 +140,10 @@ namespace ObScript::Help
+ 				break;
+ 			}
+ 
+-			std::string_view edid = IMPL::GetFormEditorID(a_form);
+-			std::string_view name = a_form->GetName();
++			const char* edidRaw = IMPL::GetFormEditorID(a_form);  // Claude fix: forms with no editor ID return null
++			const char* nameRaw = a_form->GetName();
++			std::string_view edid = edidRaw ? edidRaw : "";
++			std::string_view name = nameRaw ? nameRaw : "";
+ 
+ 			if (IMPL::Contains(edid, a_name) || IMPL::Contains(name, a_name))
+ 			{
+@@ -341,14 +343,14 @@ namespace ObScript::Help
+ 	{
+ 		void Match(const std::string_view& a_name, RE::SCRIPT_FUNCTION a_function)
+ 		{
+-			std::string_view name = a_function.functionName;
++			std::string_view name = a_function.functionName ? a_function.functionName : "";
+ 			if (name.empty())
+ 			{
+ 				return;
+ 			}
+ 
+-			std::string_view nick = a_function.shortName;
+-			std::string_view help = a_function.helpString;
++			std::string_view nick = a_function.shortName ? a_function.shortName : "";
++			std::string_view help = a_function.helpString ? a_function.helpString : "";
+ 			if (IMPL::Contains(name, a_name) || IMPL::Contains(nick, a_name) || IMPL::Contains(help, a_name))
+ 			{
+ 				std::stringstream ss;
+@@ -383,7 +385,8 @@ namespace ObScript::Help
+ 	{
+ 		void Match(const std::string_view& a_name, RE::TESGlobal* a_global)
+ 		{
+-			std::string_view editorID = a_global->GetFormEditorID();
++			const char* editorIDRaw = a_global->GetFormEditorID();  // Claude fix: null guard
++			std::string_view editorID = editorIDRaw ? editorIDRaw : "";
+ 			if (IMPL::Contains(editorID, a_name))
+ 			{
+ 				auto ss = std::format("{} = {:0.2f}"sv, editorID, a_global->value);
+@@ -408,7 +411,7 @@ namespace ObScript::Help
+ 	{
+ 		void Match(const std::string_view& a_name, RE::Setting* a_setting)
+ 		{
+-			std::string_view name = a_setting->name;
++			std::string_view name = a_setting->name ? a_setting->name : "";
+ 			if (IMPL::Contains(name, a_name))
+ 			{
+ 				std::stringstream ss;
